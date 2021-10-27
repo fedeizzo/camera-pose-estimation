@@ -1,0 +1,7 @@
+numpy==1.20.2
+torch==1.10.0
+matplotlib==3.4.3
+jupyterlab==3.2.1
+tqdm==4.62.3
+pandas==1.2.4
+torchvision==0.11.1
