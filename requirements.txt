@@ -6,4 +6,4 @@ tqdm==4.62.3
 pandas==1.2.4
 torchvision==0.11.1
 scipy==1.7.1
-transformations==2021.6.6
+transforms3d==0.3.1
