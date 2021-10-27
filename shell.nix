@@ -26,4 +26,7 @@ mach-nix.nixpkgs.mkShell {
     pkgs.colmapWithCuda
     pythonEnv
   ];
+  shellHook = ''
+    export PATH=$PATH:$(pwd)/camera-pose-estimation/tools
+  '';
 }
