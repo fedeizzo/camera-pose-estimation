@@ -6,6 +6,8 @@ colmap automatic_reconstructor \
     --workspace_path $1 \
     --image_path $2 \
     --dense yes \
-    --sparse yes \
+    --sparse no \
     --quality $3 \
-    --use_gpu 0
+    --use_gpu 0 \
+    --num_threads 16 \
+    --data_type video \
