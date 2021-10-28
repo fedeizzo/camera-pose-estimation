@@ -1,3 +1,4 @@
 .envrc
+.vscode
 data
 notebooks/.ipynb_checkpoints
