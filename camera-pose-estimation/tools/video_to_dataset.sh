@@ -9,7 +9,7 @@ import transforms3d.quaternions as quat
 
 from pathlib import PosixPath
 from os import makedirs
-from os.path import isdir
+from os.path import isdir, isfile
 from shutil import rmtree
 from typing import Optional
 
@@ -209,16 +209,18 @@ def main(args):
         rmtree(img_path)
         rmtree(workspace_path)
         raise ValueError(f"Error during colmap reconstruction")
-    image_names, quaternions, translation_vectors, xyz_positions = get_camera_positions(
-        f"{workspace_path}/sparse/0/images.bin"
-    )
-    save_positions(
-        quaternions,
-        translation_vectors,
-        xyz_positions,
-        image_names,
-        f"{args.output_path}/positions.csv",
-    )
+
+    images_file = f"{workspace_path}/sparse/0/images.bin"
+    if isfile(images_file):
+        image_names, quaternions, translation_vectors, xyz_positions = get_camera_positions(
+        )
+        save_positions(
+            quaternions,
+            translation_vectors,
+            xyz_positions,
+            image_names,
+            f"{args.output_path}/positions.csv",
+        )
 
 
 if __name__ == "__main__":
