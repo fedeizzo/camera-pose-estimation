@@ -24,6 +24,8 @@ mach-nix.nixpkgs.mkShell {
   buildInputs = [
     pkgs.ffmpeg
     pkgs.colmapWithCuda
+    pkgs.python39Packages.pytorch-bin
+    pkgs.meshlab
     pythonEnv
   ];
   shellHook = ''
