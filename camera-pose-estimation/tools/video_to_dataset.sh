@@ -9,7 +9,9 @@ import transforms3d.quaternions as quat
 
 from pathlib import PosixPath
 from os import makedirs
+from os.path import isdir
 from shutil import rmtree
+from typing import Optional
 
 CameraModel = collections.namedtuple(
     "CameraModel", ["model_id", "model_name", "num_params"]
@@ -139,18 +141,19 @@ def video_to_images(video_path: str, frame_amount: int, output_path: str):
 
 
 def colmap_reconstruction(
-    project_path: str,
+    project_path: Optional[str],
     workspace_path: str,
     image_path: str,
     num_threads: int,
     video_path: str,
+    type: str,
 ):
     result = subprocess.run(
         [
             "colmap",
             "automatic_reconstructor",
-            # "--project_path",
-            # project_path,
+            "--project_path" if project_path else "",
+            project_path if project_path else "",
             "--workspace_path",
             workspace_path,
             "--image_path",
@@ -162,13 +165,13 @@ def colmap_reconstruction(
             "--single_camera",
             "1",
             "--sparse",
-            "yes",
+            "yes" if type == "sparse" else "no",
             "--dense",
-            "no",
+            "yes" if type == "dense" else "no",
             "--num_threads",
             num_threads,
             "--use_gpu",
-            "no",
+            "off",
             video_path,
         ],
         capture_output=True,
@@ -185,11 +188,22 @@ def colmap_reconstruction(
 def main(args):
     img_path = f"{args.output_path}/imgs"
     workspace_path = f"{args.output_path}/workspace"
-    makedirs(img_path)
-    makedirs(workspace_path)
-    video_to_images(args.video, args.frames, img_path)
+    if not isdir(img_path):
+        makedirs(img_path)
+        video_to_images(args.video, args.frames, img_path)
+    else:
+        print(
+            "INFO: imgs folder already present, if you want to change framerate sampling delete it"
+        )
+    if not isdir(workspace_path):
+        makedirs(workspace_path)
     result = colmap_reconstruction(
-        args.camera_refence_path, workspace_path, img_path, args.num_threads, args.video
+        args.camera_refence_path,
+        workspace_path,
+        img_path,
+        args.num_threads,
+        args.video,
+        args.type,
     )
     if not result:
         rmtree(img_path)
@@ -230,15 +244,17 @@ if __name__ == "__main__":
         "-c",
         "--camera_refence_path",
         type=str,
-        required=True,
+        required=False,
         help="Path where camera db values is saved",
     )
     parser.add_argument(
         "-n",
         "--num_threads",
         type=str,
-        required=True,
-        help="Number of threads to use",
+        required=False,
+        default="-1",
+        help="Number of threads to use (default all threads)",
     )
+    parser.add_argument("-t", "--type", required=True, choices=["sparse", "dense"])
     args = parser.parse_args()
     main(args)
