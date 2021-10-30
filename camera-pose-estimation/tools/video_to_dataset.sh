@@ -117,7 +117,7 @@ def save_positions(
 
 def video_to_images(video_path: str, frame_amount: int, output_path: str):
     ffmpeg.input(video_path).filter("fps", fps=frame_amount).output(
-        f"{output_path}/%d.png", start_number=0
+        f"{output_path}/%04d.png", start_number=0
     ).overwrite_output().run(quiet=True)
 
 
@@ -200,7 +200,7 @@ def main(args):
             quaternions,
             translation_vectors,
             xyz_positions,
-        ) = get_camera_positions()
+        ) = get_camera_positions(images_file)
         save_positions(
             quaternions,
             translation_vectors,
