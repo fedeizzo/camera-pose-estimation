@@ -1,5 +1,13 @@
 .envrc
 .vscode
 data
+data_old
 notebooks/.ipynb_checkpoints
 __pycache__
+
+*.ini
+
+# Config parser generated files
+*.egg-info
+*.egg
+*/build/lib
