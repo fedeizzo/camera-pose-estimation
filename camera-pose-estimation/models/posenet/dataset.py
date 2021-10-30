@@ -48,7 +48,7 @@ def get_sample_from_row(df_row, image_folder, transforms):
 
 
 class HighMemoryDataset(Dataset):
-    def __init__(self, dataset_path: str, image_folder: str, is_train=True, transforms=None) -> None:
+    def __init__(self, dataset_path: str, image_folder: str, device, is_train=True, transforms=None) -> None:
         self.X = []
         self.Y = []
         df = pd.read_csv(dataset_path)
@@ -64,6 +64,9 @@ class HighMemoryDataset(Dataset):
             )
             self.X.append(curr_sample[0])
             self.Y.append(curr_sample[1])
+
+        self.X = torch.stack(self.X).to(device)
+        self.Y = torch.stack(self.Y).to(device)
         
     def __getitem__(self, idxs):
         return self.X[idxs], self.Y[idxs]
@@ -73,9 +76,10 @@ class HighMemoryDataset(Dataset):
 
 
 class LowMemoryDataset(Dataset):
-    def __init__(self, dataset_path: str, image_folder: str, is_train=True, transforms=None) -> None:
+    def __init__(self, dataset_path: str, image_folder: str, device, is_train=True, transforms=None) -> None:
         self.transforms = transforms
         self.image_folder = image_folder
+        self.device = device
         self.df = pd.read_csv(dataset_path)
 
         if transforms is None:
@@ -97,8 +101,8 @@ class LowMemoryDataset(Dataset):
                 x.append(curr_sample[0])
                 y.append(curr_sample[1])
 
-            x = torch.stack(x)            
-            y = torch.stack(y)
+            x = torch.stack(x).to(self.device)
+            y = torch.stack(y).to(self.device)
         else:
             x, y = self._get_sample(sample)
 

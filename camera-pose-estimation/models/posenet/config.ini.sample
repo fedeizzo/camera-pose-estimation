@@ -1,0 +1,32 @@
+[environment]
+; experiment_name = "experiment_1"
+; run_name = "test_1"
+seed = 0
+epochs = 100
+
+[model]
+name = "posenet"
+outputs = 7
+
+[dataloader]
+batch_size = 64
+
+[loss]
+type = "weighted"
+weights = [1, 1, 1, 1, 1, 1, 1]
+
+[optimizer]
+name = "SGD"
+lr = 0.01
+momentum = 0.9
+
+[scheduler]
+name = "StepLR"
+step_size = 20
+gamma = 0.1
+
+[paths]
+dataset = "data/scacchiera_5_low/positions.csv"
+images = "data/scacchiera_5_low/imgs/"
+; net_weights_dir = "/data/net_weights"
+; aim_dir = "/data/net_weights"
