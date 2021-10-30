@@ -31,35 +31,16 @@ class Image(BaseImage):
 
 
 def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
-    """Read and unpack the next bytes from a binary file.
-    :param fid:
-    :param num_bytes: Sum of combination of {2, 4, 8}, e.g. 2, 6, 16, 30, etc.
-    :param format_char_sequence: List of {c, e, f, d, h, H, i, I, l, L, q, Q}.
-    :param endian_character: Any of {@, =, <, >, !}
-    :return: Tuple of read and unpacked values.
-    """
     data = fid.read(num_bytes)
     return struct.unpack(endian_character + format_char_sequence, data)
 
 
 def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
-    """Read and unpack the next bytes from a binary file.
-    :param fid:
-    :param num_bytes: Sum of combination of {2, 4, 8}, e.g. 2, 6, 16, 30, etc.
-    :param format_char_sequence: List of {c, e, f, d, h, H, i, I, l, L, q, Q}.
-    :param endian_character: Any of {@, =, <, >, !}
-    :return: Tuple of read and unpacked values.
-    """
     data = fid.read(num_bytes)
     return struct.unpack(endian_character + format_char_sequence, data)
 
 
 def read_images_binary(path_to_model_file):
-    """
-    see: src/base/reconstruction.cc
-        void Reconstruction::ReadImagesBinary(const std::string& path)
-        void Reconstruction::WriteImagesBinary(const std::string& path)
-    """
     images = {}
     with open(path_to_model_file, "rb") as fid:
         num_reg_images = read_next_bytes(fid, 8, "Q")[0]
@@ -146,6 +127,7 @@ def colmap_reconstruction(
     image_path: str,
     num_threads: int,
     video_path: str,
+    quality: str,
     type: str,
 ):
     result = subprocess.run(
@@ -161,7 +143,7 @@ def colmap_reconstruction(
             "--data_type",
             "video",
             "--quality",
-            "high",
+            quality,
             "--single_camera",
             "1",
             "--sparse",
@@ -203,6 +185,7 @@ def main(args):
         img_path,
         args.num_threads,
         args.video,
+        args.quality,
         args.type,
     )
     if not result:
@@ -260,6 +243,14 @@ if __name__ == "__main__":
         required=False,
         default="-1",
         help="Number of threads to use (default all threads)",
+    )
+    parser.add_argument(
+        "-q",
+        "--quality",
+        type=str,
+        required=True,
+        choices=["low", "medium", "high", "extreme"],
+        help="Quality of colmap reconstruction",
     )
     parser.add_argument("-t", "--type", required=True, choices=["sparse", "dense"])
     args = parser.parse_args()
