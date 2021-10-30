@@ -124,7 +124,7 @@ def save_positions(
     file_path: str,
 ):
     with open(file_path, "w") as f:
-        f.write("x,y,z,qx,qy,qz,qw,tx,ty,tz,name\n")
+        f.write("x,y,z,qx,qy,qz,qw,tx,ty,tz,image\n")
         for q, t, p, n in zip(
             quaternions, translation_vectors, xyz_positions, image_names
         ):
@@ -212,8 +212,12 @@ def main(args):
 
     images_file = f"{workspace_path}/sparse/0/images.bin"
     if isfile(images_file):
-        image_names, quaternions, translation_vectors, xyz_positions = get_camera_positions(
-        )
+        (
+            image_names,
+            quaternions,
+            translation_vectors,
+            xyz_positions,
+        ) = get_camera_positions()
         save_positions(
             quaternions,
             translation_vectors,
