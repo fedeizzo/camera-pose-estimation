@@ -1,6 +1,8 @@
 .envrc
 .vscode
+.venv
 data
+papers
 data_old
 notebooks/.ipynb_checkpoints
 __pycache__
