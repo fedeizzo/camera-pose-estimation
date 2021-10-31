@@ -81,6 +81,50 @@ def read_images_binary(path_to_model_file):
     return images
 
 
+def read_points3D_binary(path_to_model_file):
+    """
+    see: src/base/reconstruction.cc
+        void Reconstruction::ReadPoints3DBinary(const std::string& path)
+        void Reconstruction::WritePoints3DBinary(const std::string& path)
+    """
+    points3D = {}
+    with open(path_to_model_file, "rb") as fid:
+        num_points = read_next_bytes(fid, 8, "Q")[0]
+        for _ in range(num_points):
+            binary_point_line_properties = read_next_bytes(
+                fid, num_bytes=43, format_char_sequence="QdddBBBd"
+            )
+            point3D_id = binary_point_line_properties[0]
+            xyz = np.array(binary_point_line_properties[1:4])
+            rgb = np.array(binary_point_line_properties[4:7])
+            error = np.array(binary_point_line_properties[7])
+            track_length = read_next_bytes(fid, num_bytes=8, format_char_sequence="Q")[
+                0
+            ]
+            track_elems = read_next_bytes(
+                fid,
+                num_bytes=8 * track_length,
+                format_char_sequence="ii" * track_length,
+            )
+            image_ids = np.array(tuple(map(int, track_elems[0::2])))
+            point2D_idxs = np.array(tuple(map(int, track_elems[1::2])))
+            points3D[point3D_id] = Point3D(
+                id=point3D_id,
+                xyz=xyz,
+                rgb=rgb,
+                error=error,
+                image_ids=image_ids,
+                point2D_idxs=point2D_idxs,
+            )
+    return points3D
+
+
+def get_reference_points(points_file: str):
+    points = list(read_points3D_binary(points_file).values())
+    points = np.array(list(map(lambda x: x.xyz, points)))
+    return points
+
+
 def get_camera_positions(images_file: str):
     images = list(read_images_binary(images_file).values())
     images.sort(key=lambda x: int(x.name[:-4]))
@@ -113,6 +157,13 @@ def save_positions(
             tx, ty, tz = t
             x, y, z = p
             f.write(f"{x},{y},{z},{qx},{qy},{qz},{qw},{tx},{ty},{tz},{n}\n")
+
+
+def save_reference_points(points: np.ndarray, file_path: str):
+    with open(file_path, "w") as f:
+        f.write("x,y,z\n")
+        for point in points:
+            f.write(f"{point[0]},{point[1]},{point[2]}\n")
 
 
 def video_to_images(video_path: str, frame_amount: int, output_path: str):
@@ -194,6 +245,7 @@ def main(args):
         raise ValueError(f"Error during colmap reconstruction")
 
     images_file = f"{workspace_path}/sparse/0/images.bin"
+    points_file = f"{workspace_path}/sparse/0/points3D.bin"
     if isfile(images_file):
         (
             image_names,
@@ -207,6 +259,12 @@ def main(args):
             xyz_positions,
             image_names,
             f"{args.output_path}/positions.csv",
+        )
+    if isfile(points_file):
+        points = get_reference_points(points_file)
+        save_reference_points(
+            points,
+            f"{args.output_path}/points3D.csv",
         )
 
 
