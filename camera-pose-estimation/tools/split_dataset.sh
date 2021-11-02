@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 import argparse
+import pickle
 
 import pandas as pd
 
 from pathlib import PosixPath
-from typing import Optional
+from typing import Optional, Tuple
+from sklearn.preprocessing import MinMaxScaler
 
 
 def split(
@@ -37,6 +39,53 @@ def split(
     return train, validation, test
 
 
+def normalize(
+    train: pd.DataFrame,
+    validation: pd.DataFrame,
+    test: pd.DataFrame,
+    scaler_path: PosixPath,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    quaternion_scaler = MinMaxScaler()
+    quaternion_scaler = quaternion_scaler.fit(
+        train[["qx", "qy", "qz", "qw"]].values.flatten().reshape(-1, 1)
+    )
+    translation_scaler = MinMaxScaler()
+    translation_scaler = translation_scaler.fit(
+        train[["tx", "ty", "tz"]].values.flatten().reshape(-1, 1)
+    )
+
+    for phase in [train, validation, test]:
+        for col in ["qx", "qy", "qz", "qw"]:
+            phase.update(
+                {
+                    col: quaternion_scaler.transform(
+                        phase[col].values.reshape(-1, 1)
+                    ).flatten()
+                }
+            )
+
+        for col in ["tx", "ty", "tz"]:
+            phase.update(
+                {
+                    col: translation_scaler.transform(
+                        phase[col].values.reshape(-1, 1)
+                    ).flatten()
+                }
+            )
+
+    for scaler, filepath in zip(
+        [quaternion_scaler, translation_scaler],
+        [
+            scaler_path / "quaternion_scaler.pkl",
+            scaler_path / "translation_scaler.pkl",
+        ],
+    ):
+        with open(filepath, "wb") as f:
+            pickle.dump(scaler, f)
+
+    return train, validation, test
+
+
 def main(args):
     input_path = PosixPath(args.input_path)
     positions_file = input_path / "positions.csv"
@@ -46,6 +95,7 @@ def main(args):
         train, validation, test = split(
             positions, args.train_split, args.validation_split, args.test_split
         )
+        train, validation, test = normalize(train.copy(deep=True), validation.copy(deep=True), test.copy(deep=True), input_path)
         train_file = input_path / "train.csv"
         validation_file = input_path / "validation.csv"
         test_file = input_path / "test.csv"
