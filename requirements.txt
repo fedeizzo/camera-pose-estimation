@@ -1,14 +1,13 @@
 numpy==1.20.2
-torch==1.10.0
 matplotlib==3.4.3
 jupyterlab==3.2.1
 tqdm==4.62.3
 pandas==1.2.4
-torchvision==0.11.1
 scipy==1.7.1
 transforms3d==0.3.1
 ffmpeg-python==0.2.0
 Pillow==8.4.0
 aim==3.0.1
 scikit-learn==1.0.1
-
+https://download.pytorch.org/whl/cu113/torch-1.10.0%2Bcu113-cp39-cp39-linux_x86_64.whl
+https://download.pytorch.org/whl/cu113/torchvision-0.11.1%2Bcu113-cp39-cp39-linux_x86_64.whl
