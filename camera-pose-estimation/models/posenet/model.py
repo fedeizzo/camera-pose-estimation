@@ -11,15 +11,17 @@ def get_posenet(outputs: int) -> nn.Module:
     # Parameters of newly constructed modules have requires_grad=True by default
     num_ftrs = model.fc.in_features
     model.fc = nn.Sequential(
-        nn.Linear(num_ftrs, 1024),
-        nn.ReLU(),
-        nn.Linear(1024, 512),
-        nn.ReLU(),
-        nn.Linear(512, 256),
-        nn.ReLU(),
-        nn.Linear(256, 128),
-        nn.ReLU(),
-        nn.Linear(128, outputs),
+        nn.Linear(num_ftrs, outputs),
     )
+
+    # model.fc = nn.Sequential(
+    #     nn.Linear(num_ftrs, 256),
+    #     nn.ReLU(),
+    #     nn.Linear(256, 128),
+    #     nn.ReLU(),
+    #     nn.Linear(128, 64),
+    #     nn.ReLU(),
+    #     nn.Linear(64, outputs),
+    # )
 
     return model

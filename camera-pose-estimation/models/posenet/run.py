@@ -65,9 +65,9 @@ def get_device() -> torch.device:
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(model_name: str, outputs: int, device: torch.device) -> torch.nn.Module:
-    if model_name == "posenet":
-        model = get_posenet(outputs).to(device)
+def get_model(config_model, device: torch.device) -> torch.nn.Module:
+    if config_model['name'] == "posenet":
+        model = get_posenet(config_model["outputs"]).to(device)
     else:
         raise ValueError(f"Unknown model: {config_model['name']}")
 
@@ -124,7 +124,7 @@ def get_loss(config_loss: dict, device: torch.device):
     if config_loss["type"] == "mse":
         criterion = torch.nn.MSELoss()
     if config_loss["type"] == "dense_custom":
-        criterion = dense_custom_loss(alpha=100)
+        criterion = dense_custom_loss(alpha=1)
     elif config_loss["type"] == "weighted":
         criterion = weighted_mse_loss(torch.Tensor(config_loss["weights"]).to(device))
 
@@ -192,11 +192,11 @@ def main(config_path: str):
         dataset_type,
         device,
     )
-    test_dataloader = dataloaders["test"]
-    del dataloaders["test"]
+    # test_dataloader = dataloaders["test"]
+    # del dataloaders["test"]
 
     criterion = get_loss(config["loss"], device)
-    model = get_model(config["model"]["name"], config["model"]["outputs"], device)
+    model = get_model(config["model"], device)
 
     # only parameters of final layer are being optimized
     optimizer = get_optimizer(config["optimizer"], model.fc.parameters())
