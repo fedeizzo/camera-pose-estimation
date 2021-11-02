@@ -41,6 +41,17 @@ def weighted_mse_loss(
     return fun
 
 
+def dense_custom_loss(
+    alpha: float,
+) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
+    def fun(input: torch.Tensor, target: torch.Tensor):
+        return torch.sqrt(
+            torch.sum((target[:, :3] - input[:, :3]) ** 2)
+        ) + alpha * torch.sqrt(torch.sum((target[:, 3:] - input[:, 3:]) ** 2))
+
+    return fun
+
+
 def set_random_seed(seed=0) -> None:
     random.seed(seed)
     np.random.seed(seed)
@@ -54,9 +65,7 @@ def get_device() -> torch.device:
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(
-    model_name: str, outputs: int, device: torch.device
-) -> torch.nn.Module:
+def get_model(model_name: str, outputs: int, device: torch.device) -> torch.nn.Module:
     if model_name == "posenet":
         model = get_posenet(outputs).to(device)
     else:
@@ -105,9 +114,7 @@ def get_dataloaders(
             images_path,
             device,
             phase == "train",
-            HighMemoryDataset
-            if dataset_type == "HighMemory"
-            else LowMemoryDataset,
+            HighMemoryDataset if dataset_type == "HighMemory" else LowMemoryDataset,
             batch_size if phase != "test" else None,
         )
     return dataloaders
@@ -116,10 +123,10 @@ def get_dataloaders(
 def get_loss(config_loss: dict, device: torch.device):
     if config_loss["type"] == "mse":
         criterion = torch.nn.MSELoss()
+    if config_loss["type"] == "dense_custom":
+        criterion = dense_custom_loss(alpha=100)
     elif config_loss["type"] == "weighted":
-        criterion = weighted_mse_loss(
-            torch.Tensor(config_loss["weights"]).to(device)
-        )
+        criterion = weighted_mse_loss(torch.Tensor(config_loss["weights"]).to(device))
 
     return criterion
 
@@ -167,9 +174,7 @@ def main(config_path: str):
     aim_run[...] = config.get_config()
     save_config_ro(
         config_path,
-        os.path.join(
-            experiment_dir, config["environment"]["run_name"] + "_config.ini"
-        ),
+        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini"),
     )
 
     train_dataset_path = config["paths"]["train_dataset"]
@@ -191,9 +196,7 @@ def main(config_path: str):
     del dataloaders["test"]
 
     criterion = get_loss(config["loss"], device)
-    model = get_model(
-        config["model"]["name"], config["model"]["outputs"], device
-    )
+    model = get_model(config["model"]["name"], config["model"]["outputs"], device)
 
     # only parameters of final layer are being optimized
     optimizer = get_optimizer(config["optimizer"], model.fc.parameters())
@@ -212,18 +215,12 @@ def main(config_path: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Base model")
-    parser.add_argument(
-        "-c", "--config", type=str, required=True, help="Config file"
-    )
-    parser.add_argument(
-        "-t", "--train", action="store_true", help="Train model flag"
-    )
+    parser.add_argument("-c", "--config", type=str, required=True, help="Config file")
+    parser.add_argument("-t", "--train", action="store_true", help="Train model flag")
     parser.add_argument(
         "-i", "--inference", action="store_true", help="Inference model flag"
     )
-    parser.add_argument(
-        "-e", "--test", action="store_true", help="Test model flag"
-    )
+    parser.add_argument("-e", "--test", action="store_true", help="Test model flag")
 
     args = parser.parse_args()
     config_path = args.config

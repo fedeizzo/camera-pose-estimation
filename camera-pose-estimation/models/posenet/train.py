@@ -13,7 +13,7 @@ def train(
     optimizer,
     scheduler,
     num_epochs: int,
-    aim_run: Run
+    aim_run: Run,
 ):
     best_model = model
     best_loss = np.Inf
@@ -34,7 +34,7 @@ def train(
                     loss = criterion(predictions, labels)
                     epoch_loss += loss.item()
 
-                    if phase == 'train':
+                    if phase == "train":
                         loss.backward()
                         optimizer.step()
                         scheduler.step()
@@ -44,12 +44,9 @@ def train(
             aim_run.track(
                 epoch_loss, name="loss", epoch=epoch, context={"subset": phase}
             )
-            aim_run.track(
-                scheduler.get_lr(), name="lr", epoch=epoch
-            )
+            aim_run.track(scheduler.get_lr(), name="lr", epoch=epoch)
 
-
-            if phase == 'val' and epoch_loss <= best_loss:
+            if phase == "val" and epoch_loss <= best_loss:
                 best_model = model
                 best_loss = epoch_loss
 
