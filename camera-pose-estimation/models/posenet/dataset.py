@@ -15,16 +15,15 @@ def get_image_trasform(is_train=True):
         resize_transform = T.Resize(224)
         crop_transform = T.CenterCrop(224)
 
-    transform = T.Compose([
-        resize_transform,
-        crop_transform,
-        T.ToTensor(),
-        T.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225]
-        )
-    ])
-    
+    transform = T.Compose(
+        [
+            resize_transform,
+            crop_transform,
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
+
     return transform
 
 
@@ -34,21 +33,30 @@ def get_sample_from_row(df_row, image_folder, transforms):
     """
     img = Image.open(os.path.join(image_folder, df_row.image))
     x = transforms(img)
-    y = torch.Tensor([
-        df_row.tx,
-        df_row.ty,
-        df_row.tz,
-        df_row.qx,
-        df_row.qy,
-        df_row.qz,
-        df_row.qw,
-    ])
+    y = torch.Tensor(
+        [
+            df_row.tx,
+            df_row.ty,
+            df_row.tz,
+            df_row.qx,
+            df_row.qy,
+            df_row.qz,
+            df_row.qw,
+        ]
+    )
 
     return x, y
 
 
 class HighMemoryDataset(Dataset):
-    def __init__(self, dataset_path: str, image_folder: str, device, is_train=True, transforms=None) -> None:
+    def __init__(
+        self,
+        dataset_path: str,
+        image_folder: str,
+        device,
+        is_train=True,
+        transforms=None,
+    ) -> None:
         self.X = []
         self.Y = []
         df = pd.read_csv(dataset_path)
@@ -57,17 +65,13 @@ class HighMemoryDataset(Dataset):
             transforms = get_image_trasform(is_train)
 
         for row in df.itertuples():
-            curr_sample = get_sample_from_row(
-                row,
-                image_folder,
-                transforms
-            )
+            curr_sample = get_sample_from_row(row, image_folder, transforms)
             self.X.append(curr_sample[0])
             self.Y.append(curr_sample[1])
 
         self.X = torch.stack(self.X).to(device)
         self.Y = torch.stack(self.Y).to(device)
-        
+
     def __getitem__(self, idxs):
         return self.X[idxs], self.Y[idxs]
 
@@ -76,7 +80,14 @@ class HighMemoryDataset(Dataset):
 
 
 class LowMemoryDataset(Dataset):
-    def __init__(self, dataset_path: str, image_folder: str, device, is_train=True, transforms=None) -> None:
+    def __init__(
+        self,
+        dataset_path: str,
+        image_folder: str,
+        device,
+        is_train=True,
+        transforms=None,
+    ) -> None:
         self.transforms = transforms
         self.image_folder = image_folder
         self.device = device
@@ -84,7 +95,6 @@ class LowMemoryDataset(Dataset):
 
         if transforms is None:
             self.transforms = get_image_trasform(is_train)
-
 
     def __getitem__(self, idxs):
         sample = self.df.iloc[idxs]
@@ -94,9 +104,7 @@ class LowMemoryDataset(Dataset):
             x, y = [], []
             for row in sample.itertuples():
                 curr_sample = get_sample_from_row(
-                    row,
-                    self.image_folder,
-                    self.transforms
+                    row, self.image_folder, self.transforms
                 )
                 x.append(curr_sample[0])
                 y.append(curr_sample[1])

@@ -1,6 +1,6 @@
 [environment]
-; experiment_name = "experiment_1"
-; run_name = "test_1"
+experiment_name = "posenet"
+run_name = "test1"
 seed = 0
 epochs = 100
 
@@ -9,10 +9,11 @@ name = "posenet"
 outputs = 7
 
 [dataloader]
+dataset_type = "HighMemory"
 batch_size = 64
 
 [loss]
-type = "weighted"
+type = "mse"
 weights = [1, 1, 1, 1, 1, 1, 1]
 
 [optimizer]
@@ -26,7 +27,10 @@ step_size = 20
 gamma = 0.1
 
 [paths]
-dataset = "data/scacchiera_5_low/positions.csv"
-images = "data/scacchiera_5_low/imgs/"
-; net_weights_dir = "/data/net_weights"
-; aim_dir = "/data/net_weights"
+train_dataset = "path"
+validation_dataset = "path"
+test_dataset = "path"
+images = "path"
+net_weights_dir = "path"
+aim_dir = "path"
+
