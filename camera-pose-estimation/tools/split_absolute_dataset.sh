@@ -95,7 +95,12 @@ def main(args):
         train, validation, test = split(
             positions, args.train_split, args.validation_split, args.test_split
         )
-        train, validation, test = normalize(train.copy(deep=True), validation.copy(deep=True), test.copy(deep=True), input_path)
+        train, validation, test = normalize(
+            train.copy(deep=True),
+            validation.copy(deep=True),
+            test.copy(deep=True),
+            input_path,
+        )
         train_file = input_path / "train.csv"
         validation_file = input_path / "validation.csv"
         test_file = input_path / "test.csv"
