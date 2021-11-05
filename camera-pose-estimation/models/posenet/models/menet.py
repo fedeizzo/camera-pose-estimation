@@ -1,11 +1,10 @@
 import torch.nn as nn
 
 from typing import OrderedDict
-from torchinfo import summary
 
 
 class MeNet(nn.Module):
-    def __init__(self, outputs, batch_size) -> None:
+    def __init__(self, outputs) -> None:
         super().__init__()
         self.conv_encoder = nn.Sequential(
             OrderedDict(
@@ -112,7 +111,11 @@ class MeNet(nn.Module):
                 ]
             )
         )
-        summary(self, input_size=(batch_size, 2, 256, 256))
+
+        self.linear_encoder = nn.Linear(5000, outputs)
 
     def forward(self, input):
-        ...
+        output = self.conv_encoder(input)
+        output = self.linear_encoder(output)
+
+        return output

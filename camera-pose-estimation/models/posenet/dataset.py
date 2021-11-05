@@ -1,10 +1,17 @@
 import os
 import pandas as pd
 import torch
+import numpy as np
 
+from enum import Enum
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms as T
+
+
+class DatasetType(Enum):
+    RELATIVE = 1
+    ABSOLUTE = 2
 
 
 def get_image_trasform(is_train=True):
@@ -27,12 +34,18 @@ def get_image_trasform(is_train=True):
     return transform
 
 
-def get_sample_from_row(df_row, image_folder, transforms):
+def load_images(image_folder: str, images_names: np.ndarray, transforms):
+    return {
+        i: transforms(Image.open(os.path.join(image_folder, i)))
+        for i in images_names
+    }
+
+
+def get_relative_sample_from_row(df_row):
     """
     Helper function to retrieve one dataset sample from a single row of the pandas DataFrame
     """
-    img = Image.open(os.path.join(image_folder, df_row.image))
-    x = transforms(img)
+    x = [df_row.image_t, df_row.image_t1]
     y = torch.Tensor(
         [
             df_row.tx,
@@ -48,7 +61,27 @@ def get_sample_from_row(df_row, image_folder, transforms):
     return x, y
 
 
-class HighMemoryDataset(Dataset):
+def get_absolute_sample_from_row(df_row):
+    """
+    Helper function to retrieve one dataset sample from a single row of the pandas DataFrame
+    """
+    x = df_row.image
+    y = torch.Tensor(
+        [
+            df_row.tx,
+            df_row.ty,
+            df_row.tz,
+            df_row.qx,
+            df_row.qy,
+            df_row.qz,
+            df_row.qw,
+        ]
+    )
+
+    return x, y
+
+
+class AbsolutePoseDataset(Dataset):
     def __init__(
         self,
         dataset_path: str,
@@ -62,24 +95,34 @@ class HighMemoryDataset(Dataset):
         df = pd.read_csv(dataset_path)
 
         if transforms is None:
-            transforms = get_image_trasform(is_train)
+            transforms = get_image_trasform()
 
-        for row in df.itertuples():
-            curr_sample = get_sample_from_row(row, image_folder, transforms)
-            self.X.append(curr_sample[0])
-            self.Y.append(curr_sample[1])
+        if isinstance(df, pd.DataFrame):
+            images = load_images(
+                image_folder, df["image_t"].values, transforms
+            )
+            for row in df.itertuples():
+                curr_sample = get_absolute_sample_from_row(row)
+                self.X.append(curr_sample[0])
+                self.Y.append(curr_sample[1])
+        else:
+            raise ValueError("Error loading dataset")
 
-        self.X = torch.stack(self.X).to(device)
-        self.Y = torch.stack(self.Y).to(device)
+        self.X = self.X
+        self.Y = torch.stack(self.Y)
+        self.images = images
+        self.device = device
 
     def __getitem__(self, idxs):
-        return self.X[idxs], self.Y[idxs]
+        X = torch.Tensor(self.images[self.X[idxs][0]]).to(self.device)
+        Y = self.Y[idxs].to(self.device)
+        return X, Y
 
     def __len__(self):
         return len(self.X)
 
 
-class LowMemoryDataset(Dataset):
+class RelativePoseDataset(Dataset):
     def __init__(
         self,
         dataset_path: str,
@@ -88,33 +131,32 @@ class LowMemoryDataset(Dataset):
         is_train=True,
         transforms=None,
     ) -> None:
-        self.transforms = transforms
-        self.image_folder = image_folder
-        self.device = device
-        self.df = pd.read_csv(dataset_path)
+        self.X = []
+        self.Y = []
+        df = pd.read_csv(dataset_path)
 
         if transforms is None:
-            self.transforms = get_image_trasform(is_train)
+            transforms = get_image_trasform()
+
+        if isinstance(df, pd.DataFrame):
+            images = load_images(
+                image_folder, df["image_t"].values, transforms
+            )
+            for row in df.itertuples():
+                curr_sample = get_relative_sample_from_row(row)
+                self.X.append(curr_sample[0])
+                self.Y.append(curr_sample[1])
+        else:
+            raise ValueError("Error loading dataset")
+
+        self.X = self.X
+        self.Y = torch.stack(self.Y)
+        self.images = images
+        self.device = device
 
     def __getitem__(self, idxs):
-        sample = self.df.iloc[idxs]
-
-        # check if data from multiple indexes has been requested
-        if isinstance(sample, pd.DataFrame):
-            x, y = [], []
-            for row in sample.itertuples():
-                curr_sample = get_sample_from_row(
-                    row, self.image_folder, self.transforms
-                )
-                x.append(curr_sample[0])
-                y.append(curr_sample[1])
-
-            x = torch.stack(x).to(self.device)
-            y = torch.stack(y).to(self.device)
-        else:
-            x, y = self._get_sample(sample)
-
-        return x, y
+        X = [self.images[self.X[idxs][0]], self.images[self.X[idxs][1]]]
+        return torch.stack(X).to(self.device), self.Y[idxs].to(self.device)
 
     def __len__(self):
-        return len(self.df)
+        return len(self.X)

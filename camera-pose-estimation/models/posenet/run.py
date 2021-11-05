@@ -9,15 +9,17 @@ import os
 from config_parser import ConfigParser
 from torch.optim import lr_scheduler, SGD
 from torch.utils.data import DataLoader
-from typing import Optional, Dict, Callable
+from typing import Optional, Dict, Callable, Tuple
 
-from dataset import LowMemoryDataset, HighMemoryDataset
-from model import get_posenet
+from dataset import AbsolutePoseDataset, RelativePoseDataset, DatasetType
+from models.posenet import get_posenet
+from models.menet import MeNet
 from train import train
 from aim import Run
+from torchinfo import summary
 
-from os import makedirs, getcwd, chdir, system, chmod
-from os.path import isdir, join
+from os import makedirs, chmod
+from os.path import join
 from shutil import copy
 
 
@@ -25,7 +27,6 @@ def create_experiment_dir(net_weights_dir: str, experiment_name: str) -> str:
     experiment_dir = join(net_weights_dir, experiment_name)
     makedirs(experiment_dir, exist_ok=True)
     return experiment_dir
-
 
 def save_config_ro(config_src: str, config_dst: str):
     copy(config_src, config_dst)
@@ -65,13 +66,19 @@ def get_device() -> torch.device:
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(config_model, device: torch.device) -> torch.nn.Module:
-    if config_model['name'] == "posenet":
+def get_model(
+    config_model, device: torch.device
+) -> Tuple[torch.nn.Module, DatasetType]:
+    if config_model["name"] == "posenet":
         model = get_posenet(config_model["outputs"]).to(device)
+        dataset_type = DatasetType.ABSOLUTE
+    elif config_model["name"] == "menet":
+        model = MeNet(config_model["outputs"]).to(device)
+        dataset_type = DatasetType.RELATIVE
     else:
         raise ValueError(f"Unknown model: {config_model['name']}")
 
-    return model
+    return model, dataset_type
 
 
 def get_dataloader(
@@ -81,6 +88,7 @@ def get_dataloader(
     is_train: bool,
     dataset_type,
     batch_size: Optional[int],
+    num_workers: int
 ) -> DataLoader:
     dataset = dataset_type(
         dataset_path,
@@ -92,6 +100,7 @@ def get_dataloader(
         dataset,
         batch_size=batch_size if batch_size else 1,
         shuffle=True if batch_size else False,
+        num_workers=num_workers,
     )
 
 
@@ -101,8 +110,9 @@ def get_dataloaders(
     test_dataset_path: str,
     images_path: str,
     batch_size: int,
-    dataset_type: str,
+    dataset_type: DatasetType,
     device: torch.device,
+    num_workers: int = 0,
 ) -> Dict[str, DataLoader]:
     dataloaders = {}
     for phase, dataset_path in zip(
@@ -114,8 +124,11 @@ def get_dataloaders(
             images_path,
             device,
             phase == "train",
-            HighMemoryDataset if dataset_type == "HighMemory" else LowMemoryDataset,
+            AbsolutePoseDataset
+            if dataset_type == DatasetType.ABSOLUTE
+            else RelativePoseDataset,
             batch_size if phase != "test" else None,
+            num_workers
         )
     return dataloaders
 
@@ -126,7 +139,11 @@ def get_loss(config_loss: dict, device: torch.device):
     if config_loss["type"] == "dense_custom":
         criterion = dense_custom_loss(alpha=1)
     elif config_loss["type"] == "weighted":
-        criterion = weighted_mse_loss(torch.Tensor(config_loss["weights"]).to(device))
+        criterion = weighted_mse_loss(
+            torch.Tensor(config_loss["weights"]).to(device)
+        )
+    else:
+        raise ValueError(f"Unknown criterion: {config_loss['name']}")
 
     return criterion
 
@@ -174,7 +191,9 @@ def main(config_path: str):
     aim_run[...] = config.get_config()
     save_config_ro(
         config_path,
-        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini"),
+        os.path.join(
+            experiment_dir, config["environment"]["run_name"] + "_config.ini"
+        ),
     )
 
     train_dataset_path = config["paths"]["train_dataset"]
@@ -182,7 +201,12 @@ def main(config_path: str):
     test_dataset_path = config["paths"]["test_dataset"]
     images_path = config["paths"]["images"]
     batch_size = config["dataloader"]["batch_size"]
-    dataset_type = config["dataloader"]["dataset_type"]
+    if "num_workers" in config["dataloader"]:
+        num_workers = config["dataloader"]["num_workers"]
+    else:
+        num_workers = 0
+
+    model, dataset_type = get_model(config["model"], device)
     dataloaders = get_dataloaders(
         train_dataset_path,
         validation_dataset_path,
@@ -191,15 +215,20 @@ def main(config_path: str):
         batch_size,
         dataset_type,
         device,
+        num_workers
     )
     # test_dataloader = dataloaders["test"]
     # del dataloaders["test"]
 
     criterion = get_loss(config["loss"], device)
-    model = get_model(config["model"], device)
 
     # only parameters of final layer are being optimized
-    optimizer = get_optimizer(config["optimizer"], model.fc.parameters())
+    if config["model"]["name"] == "posenet":
+        optimizer = get_optimizer(config["optimizer"], model.fc.parameters())
+        # TODO find a way to get the data input from dataloader
+        # summary(model, input_data=(batch_size, dataloaders['train'])
+    else:
+        optimizer = get_optimizer(config["optimizer"], model.parameters())
     scheduler = get_scheduler(config["scheduler"], optimizer)
 
     train(
@@ -215,12 +244,18 @@ def main(config_path: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Base model")
-    parser.add_argument("-c", "--config", type=str, required=True, help="Config file")
-    parser.add_argument("-t", "--train", action="store_true", help="Train model flag")
+    parser.add_argument(
+        "-c", "--config", type=str, required=True, help="Config file"
+    )
+    parser.add_argument(
+        "-t", "--train", action="store_true", help="Train model flag"
+    )
     parser.add_argument(
         "-i", "--inference", action="store_true", help="Inference model flag"
     )
-    parser.add_argument("-e", "--test", action="store_true", help="Test model flag")
+    parser.add_argument(
+        "-e", "--test", action="store_true", help="Test model flag"
+    )
 
     args = parser.parse_args()
     config_path = args.config

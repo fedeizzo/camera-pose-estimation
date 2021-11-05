@@ -9,7 +9,7 @@ name = "posenet"
 outputs = 7
 
 [dataloader]
-dataset_type = "HighMemory"
+num_workeres=4
 batch_size = 64
 
 [loss]
