@@ -34,7 +34,7 @@ def get_image_trasform(is_train=True):
     return transform
 
 
-def load_images(image_folder: str, images_names: np.ndarray, transforms):
+def load_images(image_folder: str, images_names: set, transforms):
     return {
         i: transforms(Image.open(os.path.join(image_folder, i)))
         for i in images_names
@@ -99,7 +99,7 @@ class AbsolutePoseDataset(Dataset):
 
         if isinstance(df, pd.DataFrame):
             images = load_images(
-                image_folder, df["image_t"].values, transforms
+                image_folder, set(list(df["image_t"].values)), transforms
             )
             for row in df.itertuples():
                 curr_sample = get_absolute_sample_from_row(row)
@@ -114,7 +114,7 @@ class AbsolutePoseDataset(Dataset):
         self.device = device
 
     def __getitem__(self, idxs):
-        X = torch.Tensor(self.images[self.X[idxs][0]]).to(self.device)
+        X = torch.Tensor(self.images[self.X[idxs]]).to(self.device)
         Y = self.Y[idxs].to(self.device)
         return X, Y
 
@@ -139,9 +139,10 @@ class RelativePoseDataset(Dataset):
             transforms = get_image_trasform()
 
         if isinstance(df, pd.DataFrame):
-            images = load_images(
-                image_folder, df["image_t"].values, transforms
-            )
+            images_t = list(df["image_t"].values)
+            images_t1 = list(df["image_t1"].values)
+            image_names = set(images_t + images_t1)
+            images = load_images(image_folder, image_names, transforms)
             for row in df.itertuples():
                 curr_sample = get_relative_sample_from_row(row)
                 self.X.append(curr_sample[0])
@@ -156,7 +157,7 @@ class RelativePoseDataset(Dataset):
 
     def __getitem__(self, idxs):
         X = [self.images[self.X[idxs][0]], self.images[self.X[idxs][1]]]
-        return torch.stack(X).to(self.device), self.Y[idxs].to(self.device)
+        return torch.cat(X, 0).to(self.device), self.Y[idxs].to(self.device)
 
     def __len__(self):
         return len(self.X)

@@ -3,119 +3,59 @@ import torch.nn as nn
 from typing import OrderedDict
 
 
+def get_conv_block(
+    in_channels: int,
+    out_channels: int,
+    kernel_size: int,
+    stride: int,
+    padding: int,
+):
+    return (
+        nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+        ),
+        nn.Dropout(0.2),
+        nn.ReLU(),
+    )
+
+
 class MeNet(nn.Module):
     def __init__(self, outputs) -> None:
         super().__init__()
+
         self.conv_encoder = nn.Sequential(
-            OrderedDict(
-                [
-                    (
-                        "conv1",
-                        nn.Conv2d(
-                            in_channels=6,
-                            out_channels=16,
-                            kernel_size=7,
-                            stride=2,
-                            padding=3,
-                        ),
-                    ),
-                    ("relu1", nn.ReLU()),
-                    (
-                        "conv2",
-                        nn.Conv2d(
-                            in_channels=16,
-                            out_channels=32,
-                            kernel_size=5,
-                            stride=2,
-                            padding=2,
-                        ),
-                    ),
-                    ("relu2", nn.ReLU()),
-                    (
-                        "conv3",
-                        nn.Conv2d(
-                            in_channels=32,
-                            out_channels=64,
-                            kernel_size=3,
-                            stride=2,
-                            padding=1,
-                        ),
-                    ),
-                    ("relu3", nn.ReLU()),
-                    (
-                        "conv4",
-                        nn.Conv2d(
-                            in_channels=64,
-                            out_channels=64,
-                            kernel_size=3,
-                            stride=1,
-                            padding=1,
-                        ),
-                    ),
-                    ("relu4", nn.ReLU()),
-                    (
-                        "conv5",
-                        nn.Conv2d(
-                            in_channels=64,
-                            out_channels=128,
-                            kernel_size=3,
-                            stride=2,
-                            padding=1,
-                        ),
-                    ),
-                    ("relu5", nn.ReLU()),
-                    (
-                        "conv6",
-                        nn.Conv2d(
-                            in_channels=128,
-                            out_channels=128,
-                            kernel_size=3,
-                            stride=1,
-                            padding=1,
-                        ),
-                    ),
-                    ("relu6", nn.ReLU()),
-                    (
-                        "conv7",
-                        nn.Conv2d(
-                            in_channels=128,
-                            out_channels=256,
-                            kernel_size=3,
-                            stride=2,
-                            padding=1,
-                        ),
-                    ),
-                    ("relu7", nn.ReLU()),
-                    (
-                        "conv8",
-                        nn.Conv2d(
-                            in_channels=256,
-                            out_channels=256,
-                            kernel_size=3,
-                            stride=1,
-                            padding=1,
-                        ),
-                    ),
-                    ("relu8", nn.ReLU()),
-                    (
-                        "conv9",
-                        nn.Conv2d(
-                            in_channels=256,
-                            out_channels=512,
-                            kernel_size=3,
-                            stride=2,
-                            padding=1,
-                        ),
-                    ),
-                    ("relu9", nn.ReLU()),
-                ]
-            )
+            *get_conv_block(6, 16, 7, 2, 3),
+            *get_conv_block(16, 32, 5, 2, 2),
+            *get_conv_block(32, 64, 3, 2, 1),
+            *get_conv_block(64, 64, 3, 1, 1),
+            *get_conv_block(64, 128, 3, 2, 1),
+            *get_conv_block(128, 128, 3, 1, 1),
+            *get_conv_block(128, 256, 3, 2, 1),
+            *get_conv_block(256, 256, 3, 1, 1),
+            *get_conv_block(256, 512, 3, 2, 1),
         )
 
-        self.linear_encoder = nn.Linear(5000, outputs)
+        self.linear_encoder = nn.Sequential(
+            nn.Linear(8192, 4092),
+            nn.ReLU(),
+            nn.Linear(4092, 2048),
+            nn.ReLU(),
+            nn.Linear(2048, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.Linear(512, outputs),
+        )
 
     def forward(self, input):
         output = self.conv_encoder(input)
+        output = output.view(
+            -1, output.size()[1] * output.size()[2] * output.size()[3]
+        )
         output = self.linear_encoder(output)
 
         return output

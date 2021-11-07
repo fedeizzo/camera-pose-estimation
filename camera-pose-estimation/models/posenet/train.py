@@ -14,6 +14,7 @@ def train(
     scheduler,
     num_epochs: int,
     aim_run: Run,
+    device: torch.device,
 ):
     best_model = model
     best_loss = np.Inf
@@ -29,15 +30,16 @@ def train(
             for index, (x, labels) in enumerate(dataloader):
                 optimizer.zero_grad()
 
-                with torch.set_grad_enabled(phase == "train"):
-                    predictions = model(x)
-                    loss = criterion(predictions, labels)
-                    epoch_loss += loss.item()
+                with torch.autocast(device_type=device):
+                    with torch.set_grad_enabled(phase == "train"):
+                        predictions = model(x)
+                        loss = criterion(predictions, labels)
+                        epoch_loss += loss.item()
 
-                    if phase == "train":
-                        loss.backward()
-                        optimizer.step()
-                        scheduler.step()
+                        if phase == "train":
+                            loss.backward()
+                            optimizer.step()
+                            scheduler.step()
 
             epoch_loss /= len(dataloader)
             print(f"\t{phase} loss={epoch_loss}")

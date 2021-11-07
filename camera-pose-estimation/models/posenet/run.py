@@ -28,6 +28,7 @@ def create_experiment_dir(net_weights_dir: str, experiment_name: str) -> str:
     makedirs(experiment_dir, exist_ok=True)
     return experiment_dir
 
+
 def save_config_ro(config_src: str, config_dst: str):
     copy(config_src, config_dst)
     chmod(config_dst, 0o444)
@@ -88,7 +89,7 @@ def get_dataloader(
     is_train: bool,
     dataset_type,
     batch_size: Optional[int],
-    num_workers: int
+    num_workers: int,
 ) -> DataLoader:
     dataset = dataset_type(
         dataset_path,
@@ -128,7 +129,7 @@ def get_dataloaders(
             if dataset_type == DatasetType.ABSOLUTE
             else RelativePoseDataset,
             batch_size if phase != "test" else None,
-            num_workers
+            num_workers,
         )
     return dataloaders
 
@@ -137,7 +138,7 @@ def get_loss(config_loss: dict, device: torch.device):
     if config_loss["type"] == "mse":
         criterion = torch.nn.MSELoss()
     if config_loss["type"] == "dense_custom":
-        criterion = dense_custom_loss(alpha=1)
+        criterion = dense_custom_loss(alpha=config_loss["alpha"])
     elif config_loss["type"] == "weighted":
         criterion = weighted_mse_loss(
             torch.Tensor(config_loss["weights"]).to(device)
@@ -215,7 +216,7 @@ def main(config_path: str):
         batch_size,
         dataset_type,
         device,
-        num_workers
+        num_workers,
     )
     # test_dataloader = dataloaders["test"]
     # del dataloaders["test"]
@@ -239,6 +240,7 @@ def main(config_path: str):
         scheduler,
         config["environment"]["epochs"],
         aim_run,
+        "cuda" if torch.cuda.is_available() else "cpu",
     )
 
 
