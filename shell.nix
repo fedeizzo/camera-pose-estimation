@@ -11,6 +11,10 @@ in
     pkgs.python39
     pkgs.python39Packages.pip
     pkgs.python39Packages.setuptools
+    pkgs.black
+    pkgs.nodePackages.pyright
+    pkgs.python39Packages.mypy
+    pkgs.python39Packages.debugpy
   ]);
   runScript = shell;
 }).env
