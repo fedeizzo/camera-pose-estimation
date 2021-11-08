@@ -9,12 +9,13 @@ import os
 from config_parser import ConfigParser
 from torch.optim import lr_scheduler, SGD
 from torch.utils.data import DataLoader
-from typing import Optional, Dict, Callable, Tuple
+from typing import Optional, Dict, Callable, Tuple, List
 
 from dataset import AbsolutePoseDataset, RelativePoseDataset, DatasetType
 from models.posenet import get_posenet
 from models.menet import MeNet
 from train import train
+from test_model import test_model
 from aim import Run
 from torchinfo import summary
 
@@ -99,16 +100,15 @@ def get_dataloader(
     )
     return DataLoader(
         dataset,
-        batch_size=batch_size if batch_size else 1,
+        batch_size=batch_size if batch_size else len(dataset),
         shuffle=True if batch_size else False,
         num_workers=num_workers,
     )
 
 
 def get_dataloaders(
-    train_dataset_path: str,
-    validation_dataset_path: str,
-    test_dataset_path: str,
+    phases: List[str],
+    dataset_paths: List[str],
     images_path: str,
     batch_size: int,
     dataset_type: DatasetType,
@@ -117,8 +117,8 @@ def get_dataloaders(
 ) -> Dict[str, DataLoader]:
     dataloaders = {}
     for phase, dataset_path in zip(
-        ["train", "validation", "test"],
-        [train_dataset_path, validation_dataset_path, test_dataset_path],
+        phases,
+        dataset_paths,
     ):
         dataloaders[phase] = get_dataloader(
             dataset_path,
@@ -175,7 +175,7 @@ def get_scheduler(config_scheduler: dict, optimizer: torch.optim.Optimizer):
     return scheduler
 
 
-def main(config_path: str):
+def train(config_path: str):
     config = ConfigParser(config_path)
     device = get_device()
     set_random_seed(config["environment"]["seed"])
@@ -209,9 +209,8 @@ def main(config_path: str):
 
     model, dataset_type = get_model(config["model"], device)
     dataloaders = get_dataloaders(
-        train_dataset_path,
-        validation_dataset_path,
-        test_dataset_path,
+        ["train", "validation", "test"],
+        [train_dataset_path, validation_dataset_path, test_dataset_path],
         images_path,
         batch_size,
         dataset_type,
@@ -244,6 +243,46 @@ def main(config_path: str):
     )
 
 
+def test(config_path: str):
+    config = ConfigParser(config_path)
+    device = get_device()
+    experiment_dir = create_experiment_dir(
+        config["paths"]["net_weights_dir"],
+        config["environment"]["experiment_name"],
+    )
+    train_configs = ConfigParser(
+        os.path.join(
+            experiment_dir, config["environment"]["run_name"] + "_config.ini"
+        )
+    )
+    set_random_seed(train_configs["environment"]["seed"])
+
+    dataset_path = config["paths"]["dataset"]
+    # scalers_path = config["paths"]["scalers_path"]
+    images_path = config["paths"]["images"]
+
+    num_workers = 0
+
+    model, dataset_type = get_model(train_configs["model"], device)
+    weights_path = os.path.join(
+        experiment_dir,
+        config["environment"]["run_name"] + ".pth",
+    )
+    model.load_state_dict(torch.load(weights_path))
+    model = model.to(get_device())
+
+    dataloaders = get_dataloaders(
+        ["test"],
+        [dataset_path],
+        images_path,
+        1,
+        dataset_type,
+        device,
+        num_workers,
+    )
+    test(model, dataloaders["test"])
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Base model")
     parser.add_argument(
@@ -266,8 +305,8 @@ if __name__ == "__main__":
         parser.error("Either --train, --inference, or --test must be provided")
 
     if args.train:
-        main(config_path)
+        train(config_path)
     elif args.inference:
         raise NotImplementedError("Inference mode not yet implemented")
     elif args.test:
-        raise NotImplementedError("Test mode not yet implemented")
+        test(config_path)
