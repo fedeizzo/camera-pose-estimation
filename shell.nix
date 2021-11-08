@@ -15,6 +15,7 @@ in
     pkgs.nodePackages.pyright
     pkgs.python39Packages.mypy
     pkgs.python39Packages.debugpy
+    pkgs.cloudcompare
   ]);
   runScript = shell;
 }).env
