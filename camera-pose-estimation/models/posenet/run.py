@@ -4,6 +4,7 @@ import argparse
 import random
 import numpy as np
 import torch
+import pickle
 import os
 
 from config_parser import ConfigParser
@@ -14,8 +15,13 @@ from typing import Optional, Dict, Callable, Tuple, List
 from dataset import AbsolutePoseDataset, RelativePoseDataset, DatasetType
 from models.posenet import get_posenet
 from models.menet import MeNet
-from train import train
-from test_model import test_model
+from train import train_model
+from test_model import (
+    test_model,
+    reverse_normalization,
+    from_relative_to_absolute_pose,
+    compute_absolute_positions,
+)
 from aim import Run
 from torchinfo import summary
 
@@ -225,13 +231,15 @@ def train(config_path: str):
     # only parameters of final layer are being optimized
     if config["model"]["name"] == "posenet":
         optimizer = get_optimizer(config["optimizer"], model.fc.parameters())
-        # TODO find a way to get the data input from dataloader
-        # summary(model, input_data=(batch_size, dataloaders['train'])
     else:
         optimizer = get_optimizer(config["optimizer"], model.parameters())
+    summary(
+        model,
+        (batch_size, *dataloaders["train"].dataset[0][0].size()),
+    )
     scheduler = get_scheduler(config["scheduler"], optimizer)
 
-    train(
+    trained_model = train_model(
         model,
         dataloaders,
         criterion,
@@ -241,6 +249,11 @@ def train(config_path: str):
         aim_run,
         "cuda" if torch.cuda.is_available() else "cpu",
     )
+    net_weights_path = os.path.join(
+        experiment_dir,
+        config["environment"]["run_name"] + ".pth",
+    )
+    torch.save(trained_model.state_dict(), net_weights_path)
 
 
 def test(config_path: str):
@@ -258,7 +271,8 @@ def test(config_path: str):
     set_random_seed(train_configs["environment"]["seed"])
 
     dataset_path = config["paths"]["dataset"]
-    # scalers_path = config["paths"]["scalers_path"]
+    quaternion_scaler_path = config["paths"]["quaternion_scaler"]
+    translation_scaler_path = config["paths"]["translation_scaler"]
     images_path = config["paths"]["images"]
 
     num_workers = 0
@@ -280,7 +294,30 @@ def test(config_path: str):
         device,
         num_workers,
     )
-    test(model, dataloaders["test"])
+    targets, predictions = test_model(model, dataloaders["test"])
+
+    with open(quaternion_scaler_path, "rb") as f:
+        quaternion_scaler = pickle.load(f)
+    with open(translation_scaler_path, "rb") as f:
+        translation_scaler = pickle.load(f)
+
+    predictions = reverse_normalization(
+        predictions, quaternion_scaler, translation_scaler
+    )
+    predictions.loc[-1] = targets.iloc[0][
+        ["tx", "ty", "tz", "qx", "qy", "qz", "qw"]
+    ]
+    predictions.index = predictions.index + 1
+    predictions.sort_index(inplace=True)
+    targets = reverse_normalization(
+        targets, quaternion_scaler, translation_scaler
+    )
+    targets = targets[["x", "y", "z"]]
+    predictions = from_relative_to_absolute_pose(predictions)
+    positions = compute_absolute_positions(predictions)
+    import pdb
+
+    pdb.set_trace()
 
 
 if __name__ == "__main__":

@@ -139,6 +139,8 @@ class RelativePoseDataset(Dataset):
             transforms = get_image_trasform()
 
         if isinstance(df, pd.DataFrame):
+            self.original_df = df.copy(deep=True)
+            df.drop(index=0, inplace=True)
             images_t = list(df["image_t"].values)
             images_t1 = list(df["image_t1"].values)
             image_names = set(images_t + images_t1)
