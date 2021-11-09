@@ -13,10 +13,7 @@ def is_relative_workspace(workspace: PosixPath) -> bool:
     validation_file = workspace / "validation_relative.csv"
     test_file = workspace / "test_relative.csv"
 
-    return (
-        sum([isfile(train_file), isfile(validation_file), isfile(test_file)])
-        == 3
-    )
+    return sum([isfile(train_file), isfile(validation_file), isfile(test_file)]) == 3
 
 
 def create_symlinks(
@@ -50,9 +47,7 @@ def merge_datasets(
                 )
                 files.append(positions)
             else:
-                raise ValueError(
-                    f"Erroring reading dataset at {workspace/phase}"
-                )
+                raise ValueError(f"Erroring reading dataset at {workspace/phase}")
         merged = pd.concat(files)
         merged.to_csv(output_path / phase, index=False)
 
@@ -60,9 +55,7 @@ def merge_datasets(
 def main(args):
     workspaces = list(map(lambda x: PosixPath(x), args.input_paths))
     output_path = PosixPath(args.output_path)
-    are_relative_workspaces = list(
-        map(lambda x: is_relative_workspace(x), workspaces)
-    )
+    are_relative_workspaces = list(map(lambda x: is_relative_workspace(x), workspaces))
     if sum(are_relative_workspaces) == len(workspaces):
         create_symlinks(
             output_path,
@@ -76,9 +69,7 @@ def main(args):
         )
 
     else:
-        raise ValueError(
-            "Input paths do not correspond to relative workspaces"
-        )
+        raise ValueError("Input paths do not correspond to relative workspaces")
 
 
 if __name__ == "__main__":

@@ -9,22 +9,32 @@ from typing import Optional, Tuple
 from sklearn.preprocessing import MinMaxScaler
 
 
-def split(
-    positions: pd.DataFrame,
-    train_split: Optional[int],
-    validation_split: Optional[int],
-    test_split: Optional[int],
-):
+def compute_relative_position(positions: pd.DataFrame) -> pd.DataFrame:
+    first_row = positions.iloc[0].copy(deep=True)
     positions[["qx", "qy", "qz", "qw", "tx", "ty", "tz"]] = positions[
         ["qx", "qy", "qz", "qw", "tx", "ty", "tz"]
     ].diff()
+    positions = positions.reset_index().drop(columns=["index"])
     positions.rename(columns={"image": "image_t1"}, inplace=True)
     images = positions.image_t1.copy(deep=True)
     positions.drop(index=0, inplace=True)
     positions.reset_index(inplace=True)
     positions.drop(columns=["index"], inplace=True)
     positions["image_t"] = images[:-1]
+    first_row["image_t"] = "None"
+    positions.loc[-1] = first_row
+    positions.index = positions.index + 1
+    positions.sort_index(inplace=True)
 
+    return positions
+
+
+def split(
+    positions: pd.DataFrame,
+    train_split: Optional[int],
+    validation_split: Optional[int],
+    test_split: Optional[int],
+):
     train_split = train_split if train_split else int(len(positions) / 3)
     validation_split = (
         validation_split + train_split
@@ -43,8 +53,12 @@ def split(
     print(f"\ttest: [{validation_split}-{test_split}[")
 
     train = positions.iloc[:train_split]
-    validation = positions.iloc[:validation_split]
-    test = positions.iloc[:test_split]
+    validation = positions.iloc[train_split:validation_split]
+    test = positions.iloc[validation_split:test_split]
+
+    train = compute_relative_position(train.copy(deep=True))
+    validation = compute_relative_position(validation.copy(deep=True))
+    test = compute_relative_position(test.copy(deep=True))
 
     return train, validation, test
 
@@ -57,31 +71,27 @@ def normalize(
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     quaternion_scaler = MinMaxScaler()
     quaternion_scaler = quaternion_scaler.fit(
-        train[["qx", "qy", "qz", "qw"]].values.flatten().reshape(-1, 1)
+        train[["qx", "qy", "qz", "qw"]].drop(index=0).values.flatten().reshape(-1, 1)
     )
     translation_scaler = MinMaxScaler()
     translation_scaler = translation_scaler.fit(
-        train[["tx", "ty", "tz"]].values.flatten().reshape(-1, 1)
+        train[["tx", "ty", "tz"]].drop(index=0).values.flatten().reshape(-1, 1)
     )
 
     for phase in [train, validation, test]:
         for col in ["qx", "qy", "qz", "qw"]:
-            phase.update(
-                {
-                    col: quaternion_scaler.transform(
-                        phase[col].values.reshape(-1, 1)
-                    ).flatten()
-                }
-            )
+            updated = quaternion_scaler.transform(
+                phase[col].values.reshape(-1, 1)
+            ).flatten()
+            updated[0] = phase[col][0]
+            phase.update({col: updated})
 
         for col in ["tx", "ty", "tz"]:
-            phase.update(
-                {
-                    col: translation_scaler.transform(
-                        phase[col].values.reshape(-1, 1)
-                    ).flatten()
-                }
-            )
+            updated = translation_scaler.transform(
+                phase[col].values.reshape(-1, 1)
+            ).flatten()
+            updated[0] = phase[col][0]
+            phase.update({col: updated})
 
     for scaler, filepath in zip(
         [quaternion_scaler, translation_scaler],

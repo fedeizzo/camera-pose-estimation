@@ -33,8 +33,8 @@ def split(
     print(f"\ttest: [{validation_split}-{test_split}[")
 
     train = positions.iloc[:train_split]
-    validation = positions.iloc[:validation_split]
-    test = positions.iloc[:test_split]
+    validation = positions.iloc[train_split:validation_split]
+    test = positions.iloc[validation_split:test_split]
 
     return train, validation, test
 
