@@ -1,0 +1,39 @@
+[environment]
+experiment_name = "mapnet"
+run_name = "run_name"
+seed = 0
+epochs = 100
+
+[model]
+name = "mapnet"
+feature_dimension = 2048
+dropout_rate = 0.5
+
+[dataloader]
+num_workeres = 4
+batch_size = 16
+
+[loss]
+type = "mapnet_criterion"
+beta = 0
+gamma = -3.0
+learn_beta = True
+learn_gamma = True
+
+[optimizer]
+name = "adam"
+lr = 0.0001
+decay = 0.0005
+
+[scheduler]
+name = "StepLR"
+step_size = 20
+gamma = 0.1
+
+[paths]
+train_dataset = "/data/train"
+validation_dataset = "/data/validation"
+test_dataset = "/data/test"
+images = "/data/images"
+net_weights_dir = "/data/model_weights"
+aim_dir = "/data/model_weights"

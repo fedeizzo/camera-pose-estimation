@@ -53,9 +53,7 @@ class MeNet(nn.Module):
 
     def forward(self, input):
         output = self.conv_encoder(input)
-        output = output.view(
-            -1, output.size()[1] * output.size()[2] * output.size()[3]
-        )
+        output = output.view(-1, output.size()[1] * output.size()[2] * output.size()[3])
         output = self.linear_encoder(output)
 
         return output

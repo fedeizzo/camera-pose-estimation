@@ -12,6 +12,7 @@ from torchvision import transforms as T
 class DatasetType(Enum):
     RELATIVE = 1
     ABSOLUTE = 2
+    COMPOSED = 3
 
 
 def get_image_trasform(is_train=True):
@@ -36,8 +37,7 @@ def get_image_trasform(is_train=True):
 
 def load_images(image_folder: str, images_names: set, transforms):
     return {
-        i: transforms(Image.open(os.path.join(image_folder, i)))
-        for i in images_names
+        i: transforms(Image.open(os.path.join(image_folder, i))) for i in images_names
     }
 
 

@@ -8,13 +8,15 @@ import pickle
 import os
 
 from config_parser import ConfigParser
-from torch.optim import lr_scheduler, SGD
+from torch.optim import lr_scheduler, SGD, Adam
 from torch.utils.data import DataLoader
 from typing import Optional, Dict, Callable, Tuple, List
 
 from dataset import AbsolutePoseDataset, RelativePoseDataset, DatasetType
 from models.posenet import get_posenet
 from models.menet import MeNet
+from models.mapnet import MapNet
+from criterions.criterions import get_loss
 from train import train_model
 from test_model import (
     test_model,
@@ -41,26 +43,6 @@ def save_config_ro(config_src: str, config_dst: str):
     chmod(config_dst, 0o444)
 
 
-def weighted_mse_loss(
-    weight: torch.Tensor,
-) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
-    def fun(input: torch.Tensor, target: torch.Tensor):
-        return (weight * (input - target) ** 2).mean()
-
-    return fun
-
-
-def dense_custom_loss(
-    alpha: float,
-) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
-    def fun(input: torch.Tensor, target: torch.Tensor):
-        return torch.sqrt(
-            torch.sum((target[:, :3] - input[:, :3]) ** 2)
-        ) + alpha * torch.sqrt(torch.sum((target[:, 3:] - input[:, 3:]) ** 2))
-
-    return fun
-
-
 def set_random_seed(seed=0) -> None:
     random.seed(seed)
     np.random.seed(seed)
@@ -83,6 +65,9 @@ def get_model(
     elif config_model["name"] == "menet":
         model = MeNet(config_model["outputs"]).to(device)
         dataset_type = DatasetType.RELATIVE
+    elif config_model["name"] == "mapnet":
+        model = MapNet(config_model["feature_dimension"], config_model["dropout_rate"])
+        dataset_type = DatasetType.COMPOSED
     else:
         raise ValueError(f"Unknown model: {config_model['name']}")
 
@@ -140,27 +125,18 @@ def get_dataloaders(
     return dataloaders
 
 
-def get_loss(config_loss: dict, device: torch.device):
-    if config_loss["type"] == "mse":
-        criterion = torch.nn.MSELoss()
-    if config_loss["type"] == "dense_custom":
-        criterion = dense_custom_loss(alpha=config_loss["alpha"])
-    elif config_loss["type"] == "weighted":
-        criterion = weighted_mse_loss(
-            torch.Tensor(config_loss["weights"]).to(device)
-        )
-    else:
-        raise ValueError(f"Unknown criterion: {config_loss['name']}")
-
-    return criterion
-
-
 def get_optimizer(config_optimizer: dict, paramters) -> torch.optim.Optimizer:
     if config_optimizer["name"] == "SGD":
         optimizer = SGD(
             paramters,
             lr=config_optimizer["lr"],
             momentum=config_optimizer["momentum"],
+        )
+    elif config_optimizer["name"] == "adam":
+        optimizer = Adam(
+            paramters,
+            lr=config_optimizer["lr"],
+            weight_decay=config_optimizer["decay"],
         )
     else:
         raise ValueError(f"Unknown optimizer: {config_optimizer['name']}")
@@ -198,9 +174,7 @@ def train(config_path: str):
     aim_run[...] = config.get_config()
     save_config_ro(
         config_path,
-        os.path.join(
-            experiment_dir, config["environment"]["run_name"] + "_config.ini"
-        ),
+        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini"),
     )
 
     train_dataset_path = config["paths"]["train_dataset"]
@@ -231,6 +205,18 @@ def train(config_path: str):
     # only parameters of final layer are being optimized
     if config["model"]["name"] == "posenet":
         optimizer = get_optimizer(config["optimizer"], model.fc.parameters())
+    elif config["model"]["name"] == "mapnet":
+        param_list = [
+            {"params": model.parameters()},
+        ]
+        if criterion.learn_beta:
+            param_list.append(
+                {"params": [criterion.sax, criterion.saq]},
+            )
+        if criterion.learn_gamma:
+            param_list.append(
+                {"params": [criterion.srx, criterion.srq]},
+            )
     else:
         optimizer = get_optimizer(config["optimizer"], model.parameters())
     summary(
@@ -264,9 +250,7 @@ def test(config_path: str):
         config["environment"]["experiment_name"],
     )
     train_configs = ConfigParser(
-        os.path.join(
-            experiment_dir, config["environment"]["run_name"] + "_config.ini"
-        )
+        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini")
     )
     set_random_seed(train_configs["environment"]["seed"])
 
@@ -304,14 +288,10 @@ def test(config_path: str):
     predictions = reverse_normalization(
         predictions, quaternion_scaler, translation_scaler
     )
-    predictions.loc[-1] = targets.iloc[0][
-        ["tx", "ty", "tz", "qx", "qy", "qz", "qw"]
-    ]
+    predictions.loc[-1] = targets.iloc[0][["tx", "ty", "tz", "qx", "qy", "qz", "qw"]]
     predictions.index = predictions.index + 1
     predictions.sort_index(inplace=True)
-    targets = reverse_normalization(
-        targets, quaternion_scaler, translation_scaler
-    )
+    targets = reverse_normalization(targets, quaternion_scaler, translation_scaler)
     targets = targets[["x", "y", "z"]]
     predictions = from_relative_to_absolute_pose(predictions)
     positions = compute_absolute_positions(predictions)
@@ -322,18 +302,12 @@ def test(config_path: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Base model")
-    parser.add_argument(
-        "-c", "--config", type=str, required=True, help="Config file"
-    )
-    parser.add_argument(
-        "-t", "--train", action="store_true", help="Train model flag"
-    )
+    parser.add_argument("-c", "--config", type=str, required=True, help="Config file")
+    parser.add_argument("-t", "--train", action="store_true", help="Train model flag")
     parser.add_argument(
         "-i", "--inference", action="store_true", help="Inference model flag"
     )
-    parser.add_argument(
-        "-e", "--test", action="store_true", help="Test model flag"
-    )
+    parser.add_argument("-e", "--test", action="store_true", help="Test model flag")
 
     args = parser.parse_args()
     config_path = args.config

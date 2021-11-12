@@ -20,9 +20,7 @@ def compute_absolute_positions(positions: pd.DataFrame):
     return xyz_positions
 
 
-def from_relative_to_absolute_pose(
-    predictions: pd.DataFrame
-):
+def from_relative_to_absolute_pose(predictions: pd.DataFrame):
     return predictions.cumsum()
 
 
