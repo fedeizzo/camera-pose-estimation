@@ -67,7 +67,7 @@ def get_model(
         dataset_type = DatasetType.RELATIVE
     elif config_model["name"] == "mapnet":
         model = MapNet(config_model["feature_dimension"], config_model["dropout_rate"])
-        dataset_type = DatasetType.COMPOSED
+        dataset_type = DatasetType.MAPNET
     else:
         raise ValueError(f"Unknown model: {config_model['name']}")
 
