@@ -123,7 +123,14 @@ class SevenScenes(Dataset):
         return np.concatenate((xyz, wxyz))
 
     def load_image(self, image_path: PosixPath) -> torch.Tensor:
-        transforms = T.Compose([T.Resize(224), T.CenterCrop(224), T.ToTensor(),])
+        transforms = T.Compose(
+            [
+                T.Resize(224),
+                T.CenterCrop(224),
+                T.ToTensor(),
+                T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
         return transforms(Image.open(image_path))
 
     def __getitem__(self, idxs):
