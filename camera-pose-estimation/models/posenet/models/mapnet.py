@@ -16,7 +16,7 @@ class PoseNet(nn.Module):
         self.feature_extractor.fc = nn.Linear(out_feature_extractor, feature_dimension)
 
         self.xyz_encoder = nn.Linear(feature_dimension, 3)
-        self.wxyz_encoder = nn.Linear(feature_dimension, 3)
+        self.wxyz_encoder = nn.Linear(feature_dimension, 4)
 
         init_modules = [
             self.feature_extractor.fc,
@@ -30,16 +30,16 @@ class PoseNet(nn.Module):
                 if m.bias is not None:
                     nn.init.constant_(m.bias.data, 0)
 
-        def forward(self, x):
-            x = self.feature_extractor(x)
-            x = F.relu(x)
-            if self.dropout_rate > 0:
-                x = F.dropout(x, p=self.dropout_rate)
+    def forward(self, x):
+        x = self.feature_extractor(x)
+        x = F.relu(x)
+        if self.dropout_rate > 0:
+            x = F.dropout(x, p=self.dropout_rate)
 
-            xyz = self.xyz_encoder(x)
-            wxyz = self.wxyz_encoder(x)
+        xyz = self.xyz_encoder(x)
+        wxyz = self.wxyz_encoder(x)
 
-            return torch.cat((xyz, wxyz), 1)
+        return torch.cat((xyz, wxyz), 1)
 
 
 class MapNet(nn.Module):

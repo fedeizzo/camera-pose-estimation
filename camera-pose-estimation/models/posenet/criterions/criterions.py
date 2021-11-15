@@ -105,6 +105,8 @@ class MapNetCriterion(nn.Module):
         :param learn_gamma: learn srx and srq?
         """
         super(MapNetCriterion, self).__init__()
+        self.learn_beta = learn_beta
+        self.learn_gamma = learn_gamma
         self.t_loss_fn = t_loss_fn
         self.q_loss_fn = q_loss_fn
         self.sax = nn.Parameter(torch.Tensor([sax]), requires_grad=learn_beta)

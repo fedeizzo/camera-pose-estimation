@@ -192,7 +192,6 @@ def train(config_path: str):
         device,
     )
 
-    import pdb; pdb.set_trace()
     # test_dataloader = dataloaders["test"]
     # del dataloaders["test"]
 
@@ -209,11 +208,13 @@ def train(config_path: str):
             param_list.append({"params": [criterion.sax, criterion.saq]},)
         if criterion.learn_gamma:
             param_list.append({"params": [criterion.srx, criterion.srq]},)
+
+        optimizer = get_optimizer(config["optimizer"], param_list)
     else:
         optimizer = get_optimizer(config["optimizer"], model.parameters())
-    summary(
-        model, (batch_size, *dataloaders["train"].dataset[0][0].size()),
-    )
+    # summary(
+    #     model, (batch_size, *dataloaders["train"].dataset[0][0].size()),
+    # )
     scheduler = get_scheduler(config["scheduler"], optimizer)
 
     trained_model = train_model(
