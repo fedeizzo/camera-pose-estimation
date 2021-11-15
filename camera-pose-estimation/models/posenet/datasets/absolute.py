@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import pandas as pd
+import os
 
 # from dataset import load_images
 from pathlib import PosixPath
@@ -18,15 +19,7 @@ def get_absolute_sample_from_row(df_row):
     """
     x = df_row.image
     y = torch.Tensor(
-        [
-            df_row.tx,
-            df_row.ty,
-            df_row.tz,
-            df_row.qx,
-            df_row.qy,
-            df_row.qz,
-            df_row.qw,
-        ]
+        [df_row.tx, df_row.ty, df_row.tz, df_row.qx, df_row.qy, df_row.qz, df_row.qw,]
     )
 
     return x, y
@@ -69,12 +62,7 @@ class AbsolutePoseDataset(Dataset):
         self.Y = []
         df = pd.read_csv(dataset_path)
 
-        transforms = T.Compose(
-            [
-                T.Resize(224),
-                T.CenterCrop(224),
-            ]
-        )
+        transforms = T.Compose([T.Resize(224), T.CenterCrop(224),])
 
         if isinstance(df, pd.DataFrame):
             images = load_images(
@@ -103,19 +91,19 @@ class AbsolutePoseDataset(Dataset):
 
 class SevenScenes(Dataset):
     def __init__(self, dataset_path: PosixPath, seq: str):
-        sequence_path = dataset_path / seq
+        sequence_path = os.path.join(dataset_path, seq)
         files = listdir(sequence_path)
 
         image_paths = list(
             map(
-                lambda x: sequence_path / x,
+                lambda x: os.path.join(sequence_path, x),
                 list(filter(lambda x: True if "color" in x else False, files)),
             )
         )
         image_paths.sort()
         pose_paths = list(
             map(
-                lambda x: sequence_path / x,
+                lambda x: os.path.join(sequence_path, x),
                 list(filter(lambda x: True if "pose" in x else False, files)),
             )
         )
@@ -125,25 +113,17 @@ class SevenScenes(Dataset):
             list(map(lambda image: self.load_image(image), image_paths))
         )
         self.Y = torch.Tensor(
-            list(map(lambda pose: self.load_pose(pose), pose_paths))
+            np.array(list(map(lambda pose: self.load_pose(pose), pose_paths)))
         )
 
-    def load_pose(
-        self, pose_path: PosixPath
-    ) -> Tuple[float, float, float, float, float, float, float]:
+    def load_pose(self, pose_path: PosixPath) -> np.ndarray:
         homogeneous_matrix = np.loadtxt(pose_path)
-        xyz = homogeneous_matrix[:3,3]
+        xyz = homogeneous_matrix[:3, 3]
         wxyz = np.array((homogeneous_to_quaternion(homogeneous_matrix)))
         return np.concatenate((xyz, wxyz))
 
     def load_image(self, image_path: PosixPath) -> torch.Tensor:
-        transforms = T.Compose(
-            [
-                T.Resize(224),
-                T.CenterCrop(224),
-                T.ToTensor(),
-            ]
-        )
+        transforms = T.Compose([T.Resize(224), T.CenterCrop(224), T.ToTensor(),])
         return transforms(Image.open(image_path))
 
     def __getitem__(self, idxs):
@@ -158,18 +138,16 @@ class MapNetDataset(Dataset):
         self,
         path: PosixPath,
         steps: int,
-        offset: int,
-        color_jitter,
+        skip: int,
+        color_jitter: float,
         seq: Optional[str],
     ):
         if seq:
             self.inner_dataset = SevenScenes(path, seq)
         else:
-            raise NotImplementedError(
-                "Support for other datasets not implemented"
-            )
+            raise NotImplementedError("Support for other datasets not implemented")
 
-        skips = offset * np.ones(steps - 1)
+        skips = skip * np.ones(steps - 1)
         skips = np.insert(skips, 0, 0)
 
         offsets = skips.cumsum()
@@ -178,11 +156,9 @@ class MapNetDataset(Dataset):
         idxs = []
         for idx in range(len(self.inner_dataset)):
             tmp_idx = idx + offsets
-            idxs.append(
-                np.minimum(np.maximum(tmp_idx, 0), len(self.inner_dataset) - 1)
-            )
+            idxs.append(np.minimum(np.maximum(tmp_idx, 0), len(self.inner_dataset) - 1))
 
-        self.X = torch.Tensor(idxs)
+        self.X = torch.from_numpy(np.array(idxs)).long()
         self.transforms = T.Compose(
             [
                 T.ColorJitter(
@@ -195,7 +171,10 @@ class MapNetDataset(Dataset):
         )
 
     def __getitem__(self, idxs):
-        images, poses = self.inner_dataset[idxs]
+        images, poses = self.inner_dataset[self.X[idxs]]
         images = self.transforms(images)
 
         return (images, poses)
+
+    def __len__(self):
+        return self.X.shape[0]

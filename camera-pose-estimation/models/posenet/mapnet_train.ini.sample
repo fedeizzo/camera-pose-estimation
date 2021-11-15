@@ -10,15 +10,19 @@ feature_dimension = 2048
 dropout_rate = 0.5
 
 [dataloader]
-num_workeres = 4
+num_workers = 4
 batch_size = 16
+step = 3
+skip = 10
+sequence = "seq-01"
+color_jitter = 0.5
 
 [loss]
 type = "mapnet_criterion"
 beta = 0
 gamma = -3.0
-learn_beta = True
-learn_gamma = True
+learn_beta = true
+learn_gamma = true
 
 [optimizer]
 name = "adam"

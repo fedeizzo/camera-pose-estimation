@@ -9,10 +9,11 @@ import os
 
 from config_parser import ConfigParser
 from torch.optim import lr_scheduler, SGD, Adam
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
 from typing import Optional, Dict, Callable, Tuple, List
 
-from dataset import AbsolutePoseDataset, RelativePoseDataset, DatasetType
+from datasets.absolute import AbsolutePoseDataset, MapNetDataset
+from datasets.relative import RelativePoseDataset
 from models.posenet import get_posenet
 from models.menet import MeNet
 from models.mapnet import MapNet
@@ -56,18 +57,16 @@ def get_device() -> torch.device:
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(
-    config_model, device: torch.device
-) -> Tuple[torch.nn.Module, DatasetType]:
+def get_model(config_model, device: torch.device) -> Tuple[torch.nn.Module, Dataset]:
     if config_model["name"] == "posenet":
         model = get_posenet(config_model["outputs"]).to(device)
-        dataset_type = DatasetType.ABSOLUTE
+        dataset_type = AbsolutePoseDataset
     elif config_model["name"] == "menet":
         model = MeNet(config_model["outputs"]).to(device)
-        dataset_type = DatasetType.RELATIVE
+        dataset_type = RelativePoseDataset
     elif config_model["name"] == "mapnet":
         model = MapNet(config_model["feature_dimension"], config_model["dropout_rate"])
-        dataset_type = DatasetType.MAPNET
+        dataset_type = MapNetDataset
     else:
         raise ValueError(f"Unknown model: {config_model['name']}")
 
@@ -76,51 +75,55 @@ def get_model(
 
 def get_dataloader(
     dataset_path: str,
-    images_path: str,
-    device: torch.device,
-    is_train: bool,
+    config_dataloader: dict,
+    config_paths: dict,
     dataset_type,
-    batch_size: Optional[int],
-    num_workers: int,
+    is_train: bool,
+    device: torch.device,
 ) -> DataLoader:
-    dataset = dataset_type(
-        dataset_path,
-        images_path,
-        device,
-        is_train=is_train,
-    )
+    if dataset_type == MapNetDataset:
+        dataset = MapNetDataset(
+            path=dataset_path,
+            steps=config_dataloader["step"],
+            skip=config_dataloader["skip"],
+            color_jitter=config_dataloader["color_jitter"],
+            seq=config_dataloader["sequence"],
+        )
+    else:
+        dataset = dataset_type(
+            dataset_path, config_paths["images"], device, is_train=is_train
+        )
+
     return DataLoader(
         dataset,
-        batch_size=batch_size if batch_size else len(dataset),
-        shuffle=True if batch_size else False,
-        num_workers=num_workers,
+        batch_size=config_dataloader["batch_size"],
+        shuffle=True,
+        num_workers=config_dataloader["num_workers"],
     )
 
 
 def get_dataloaders(
+    config_dataloader: dict,
+    config_paths: dict,
     phases: List[str],
     dataset_paths: List[str],
-    images_path: str,
-    batch_size: int,
-    dataset_type: DatasetType,
+    dataset_type: Dataset,
     device: torch.device,
-    num_workers: int = 0,
 ) -> Dict[str, DataLoader]:
     dataloaders = {}
-    for phase, dataset_path in zip(
-        phases,
-        dataset_paths,
-    ):
+
+    assert len(dataset_paths) == len(
+        phases
+    ), "Number of phases and dataset paths must be equal"
+
+    for phase, dataset_path in zip(phases, dataset_paths,):
         dataloaders[phase] = get_dataloader(
             dataset_path,
-            images_path,
-            device,
+            config_dataloader,
+            config_paths,
+            dataset_type,
             phase == "train",
-            AbsolutePoseDataset
-            if dataset_type == DatasetType.ABSOLUTE
-            else RelativePoseDataset,
-            batch_size if phase != "test" else None,
-            num_workers,
+            device,
         )
     return dataloaders
 
@@ -128,9 +131,7 @@ def get_dataloaders(
 def get_optimizer(config_optimizer: dict, paramters) -> torch.optim.Optimizer:
     if config_optimizer["name"] == "SGD":
         optimizer = SGD(
-            paramters,
-            lr=config_optimizer["lr"],
-            momentum=config_optimizer["momentum"],
+            paramters, lr=config_optimizer["lr"], momentum=config_optimizer["momentum"],
         )
     elif config_optimizer["name"] == "adam":
         optimizer = Adam(
@@ -162,8 +163,7 @@ def train(config_path: str):
     device = get_device()
     set_random_seed(config["environment"]["seed"])
     experiment_dir = create_experiment_dir(
-        config["paths"]["net_weights_dir"],
-        config["environment"]["experiment_name"],
+        config["paths"]["net_weights_dir"], config["environment"]["experiment_name"],
     )
 
     aim_run = Run(
@@ -180,23 +180,19 @@ def train(config_path: str):
     train_dataset_path = config["paths"]["train_dataset"]
     validation_dataset_path = config["paths"]["validation_dataset"]
     test_dataset_path = config["paths"]["test_dataset"]
-    images_path = config["paths"]["images"]
     batch_size = config["dataloader"]["batch_size"]
-    if "num_workers" in config["dataloader"]:
-        num_workers = config["dataloader"]["num_workers"]
-    else:
-        num_workers = 0
 
     model, dataset_type = get_model(config["model"], device)
     dataloaders = get_dataloaders(
+        config["dataloader"],
+        config["paths"],
         ["train", "validation", "test"],
         [train_dataset_path, validation_dataset_path, test_dataset_path],
-        images_path,
-        batch_size,
         dataset_type,
         device,
-        num_workers,
     )
+
+    import pdb; pdb.set_trace()
     # test_dataloader = dataloaders["test"]
     # del dataloaders["test"]
 
@@ -210,18 +206,13 @@ def train(config_path: str):
             {"params": model.parameters()},
         ]
         if criterion.learn_beta:
-            param_list.append(
-                {"params": [criterion.sax, criterion.saq]},
-            )
+            param_list.append({"params": [criterion.sax, criterion.saq]},)
         if criterion.learn_gamma:
-            param_list.append(
-                {"params": [criterion.srx, criterion.srq]},
-            )
+            param_list.append({"params": [criterion.srx, criterion.srq]},)
     else:
         optimizer = get_optimizer(config["optimizer"], model.parameters())
     summary(
-        model,
-        (batch_size, *dataloaders["train"].dataset[0][0].size()),
+        model, (batch_size, *dataloaders["train"].dataset[0][0].size()),
     )
     scheduler = get_scheduler(config["scheduler"], optimizer)
 
@@ -236,8 +227,7 @@ def train(config_path: str):
         "cuda" if torch.cuda.is_available() else "cpu",
     )
     net_weights_path = os.path.join(
-        experiment_dir,
-        config["environment"]["run_name"] + ".pth",
+        experiment_dir, config["environment"]["run_name"] + ".pth",
     )
     torch.save(trained_model.state_dict(), net_weights_path)
 
@@ -246,8 +236,7 @@ def test(config_path: str):
     config = ConfigParser(config_path)
     device = get_device()
     experiment_dir = create_experiment_dir(
-        config["paths"]["net_weights_dir"],
-        config["environment"]["experiment_name"],
+        config["paths"]["net_weights_dir"], config["environment"]["experiment_name"],
     )
     train_configs = ConfigParser(
         os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini")
@@ -257,27 +246,23 @@ def test(config_path: str):
     dataset_path = config["paths"]["dataset"]
     quaternion_scaler_path = config["paths"]["quaternion_scaler"]
     translation_scaler_path = config["paths"]["translation_scaler"]
-    images_path = config["paths"]["images"]
-
-    num_workers = 0
 
     model, dataset_type = get_model(train_configs["model"], device)
     weights_path = os.path.join(
-        experiment_dir,
-        config["environment"]["run_name"] + ".pth",
+        experiment_dir, config["environment"]["run_name"] + ".pth",
     )
     model.load_state_dict(torch.load(weights_path))
     model = model.to(get_device())
 
     dataloaders = get_dataloaders(
+        config["dataloader"],
+        config["paths"],
         ["test"],
         [dataset_path],
-        images_path,
-        1,
         dataset_type,
         device,
-        num_workers,
     )
+
     targets, predictions = test_model(model, dataloaders["test"])
 
     with open(quaternion_scaler_path, "rb") as f:

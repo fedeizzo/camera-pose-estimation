@@ -1,18 +1,8 @@
 import os
-import pandas as pd
-import torch
-import numpy as np
 
-from enum import Enum
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms as T
-
-
-class DatasetType(Enum):
-    RELATIVE = 1
-    ABSOLUTE = 2
-    MAPNET = 3
 
 
 def get_image_trasform(is_train=True):
