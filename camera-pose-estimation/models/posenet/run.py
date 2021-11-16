@@ -12,7 +12,7 @@ from torch.optim import lr_scheduler, SGD, Adam
 from torch.utils.data import Dataset, DataLoader
 from typing import Optional, Dict, Callable, Tuple, List
 
-from datasets.absolute import AbsolutePoseDataset, MapNetDataset
+from datasets.absolute import AbsolutePoseDataset, MapNetDataset, SevenScenes
 from datasets.relative import RelativePoseDataset
 from models.posenet import get_posenet
 from models.menet import MeNet
@@ -65,7 +65,9 @@ def get_model(config_model, device: torch.device) -> Tuple[torch.nn.Module, Data
         model = MeNet(config_model["outputs"]).to(device)
         dataset_type = RelativePoseDataset
     elif config_model["name"] == "mapnet":
-        model = MapNet(config_model["feature_dimension"], config_model["dropout_rate"])
+        model = MapNet(
+            config_model["feature_dimension"], config_model["dropout_rate"]
+        ).to(device)
         dataset_type = MapNetDataset
     else:
         raise ValueError(f"Unknown model: {config_model['name']}")
@@ -78,20 +80,25 @@ def get_dataloader(
     config_dataloader: dict,
     config_paths: dict,
     dataset_type,
-    is_train: bool,
+    phase: str,
     device: torch.device,
 ) -> DataLoader:
-    if dataset_type == MapNetDataset:
+    if dataset_type == MapNetDataset and phase != "test":
         dataset = MapNetDataset(
             path=dataset_path,
             steps=config_dataloader["step"],
             skip=config_dataloader["skip"],
             color_jitter=config_dataloader["color_jitter"],
-            seq=config_dataloader["sequence"],
+            seq=config_dataloader["sequences"][phase],
+        )
+    elif dataset_type == MapNetDataset and phase == "test":
+        dataset = SevenScenes(
+            dataset_path=dataset_path,
+            seq=config_dataloader["sequences"][phase],
         )
     else:
         dataset = dataset_type(
-            dataset_path, config_paths["images"], device, is_train=is_train
+            dataset_path, config_paths["images"], device, is_train=phase == "train"
         )
 
     return DataLoader(
@@ -116,14 +123,9 @@ def get_dataloaders(
         phases
     ), "Number of phases and dataset paths must be equal"
 
-    for phase, dataset_path in zip(phases, dataset_paths,):
+    for phase, dataset_path in zip(phases, dataset_paths):
         dataloaders[phase] = get_dataloader(
-            dataset_path,
-            config_dataloader,
-            config_paths,
-            dataset_type,
-            phase == "train",
-            device,
+            dataset_path, config_dataloader, config_paths, dataset_type, phase, device,
         )
     return dataloaders
 
@@ -179,21 +181,18 @@ def train(config_path: str):
 
     train_dataset_path = config["paths"]["train_dataset"]
     validation_dataset_path = config["paths"]["validation_dataset"]
-    test_dataset_path = config["paths"]["test_dataset"]
+    # test_dataset_path = config["paths"]["test_dataset"]
     batch_size = config["dataloader"]["batch_size"]
 
     model, dataset_type = get_model(config["model"], device)
     dataloaders = get_dataloaders(
         config["dataloader"],
         config["paths"],
-        ["train", "validation", "test"],
-        [train_dataset_path, validation_dataset_path, test_dataset_path],
+        ["train", "validation"],
+        [train_dataset_path, validation_dataset_path],
         dataset_type,
         device,
     )
-
-    # test_dataloader = dataloaders["test"]
-    # del dataloaders["test"]
 
     criterion = get_loss(config["loss"], device)
 
@@ -201,13 +200,11 @@ def train(config_path: str):
     if config["model"]["name"] == "posenet":
         optimizer = get_optimizer(config["optimizer"], model.fc.parameters())
     elif config["model"]["name"] == "mapnet":
-        param_list = [
-            {"params": model.parameters()},
-        ]
+        param_list = list(model.parameters())
         if criterion.learn_beta:
-            param_list.append({"params": [criterion.sax, criterion.saq]},)
+            param_list.extend([criterion.sax, criterion.saq])
         if criterion.learn_gamma:
-            param_list.append({"params": [criterion.srx, criterion.srq]},)
+            param_list.extend([criterion.srx, criterion.srq])
 
         optimizer = get_optimizer(config["optimizer"], param_list)
     else:
@@ -245,8 +242,6 @@ def test(config_path: str):
     set_random_seed(train_configs["environment"]["seed"])
 
     dataset_path = config["paths"]["dataset"]
-    quaternion_scaler_path = config["paths"]["quaternion_scaler"]
-    translation_scaler_path = config["paths"]["translation_scaler"]
 
     model, dataset_type = get_model(train_configs["model"], device)
     weights_path = os.path.join(
@@ -255,8 +250,11 @@ def test(config_path: str):
     model.load_state_dict(torch.load(weights_path))
     model = model.to(get_device())
 
+    # TODO
+    train_configs["dataloader"]["sequences"] = config["dataloader"]["sequences"]
+
     dataloaders = get_dataloaders(
-        config["dataloader"],
+        train_configs["dataloader"],
         config["paths"],
         ["test"],
         [dataset_path],
@@ -264,26 +262,31 @@ def test(config_path: str):
         device,
     )
 
-    targets, predictions = test_model(model, dataloaders["test"])
+    targets, predictions = test_model(model, dataloaders["test"], device)
+    targets.to_csv(config["paths"]["targets"], index=False)
+    predictions.to_csv(config["paths"]["predictions"], index=False)
 
-    with open(quaternion_scaler_path, "rb") as f:
-        quaternion_scaler = pickle.load(f)
-    with open(translation_scaler_path, "rb") as f:
-        translation_scaler = pickle.load(f)
+    # quaternion_scaler_path = config["paths"]["quaternion_scaler"]
+    # translation_scaler_path = config["paths"]["translation_scaler"]
 
-    predictions = reverse_normalization(
-        predictions, quaternion_scaler, translation_scaler
-    )
-    predictions.loc[-1] = targets.iloc[0][["tx", "ty", "tz", "qx", "qy", "qz", "qw"]]
-    predictions.index = predictions.index + 1
-    predictions.sort_index(inplace=True)
-    targets = reverse_normalization(targets, quaternion_scaler, translation_scaler)
-    targets = targets[["x", "y", "z"]]
-    predictions = from_relative_to_absolute_pose(predictions)
-    positions = compute_absolute_positions(predictions)
-    import pdb
+    # with open(quaternion_scaler_path, "rb") as f:
+    #     quaternion_scaler = pickle.load(f)
+    # with open(translation_scaler_path, "rb") as f:
+    #     translation_scaler = pickle.load(f)
 
-    pdb.set_trace()
+    # predictions = reverse_normalization(
+    #     predictions, quaternion_scaler, translation_scaler
+    # )
+    # predictions.loc[-1] = targets.iloc[0][["tx", "ty", "tz", "qx", "qy", "qz", "qw"]]
+    # predictions.index = predictions.index + 1
+    # predictions.sort_index(inplace=True)
+    # targets = reverse_normalization(targets, quaternion_scaler, translation_scaler)
+    # targets = targets[["x", "y", "z"]]
+    # predictions = from_relative_to_absolute_pose(predictions)
+    # positions = compute_absolute_positions(predictions)
+    # import pdb
+
+    # pdb.set_trace()
 
 
 if __name__ == "__main__":

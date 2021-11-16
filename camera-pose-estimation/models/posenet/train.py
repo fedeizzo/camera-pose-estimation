@@ -5,6 +5,8 @@ from aim import Run
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from typing import Dict
+from criterions.criterions import MapNetCriterion
+
 
 
 def train_model(
@@ -31,6 +33,8 @@ def train_model(
 
                 epoch_loss = 0.0
                 for index, (x, labels) in enumerate(dataloader):
+                    x = x.to(device)
+                    labels = labels.to(device)
                     optimizer.zero_grad()
 
                     with torch.autocast(device_type=device):
@@ -49,7 +53,13 @@ def train_model(
                 aim_run.track(
                     epoch_loss, name="loss", epoch=epoch, context={"subset": phase}
                 )
-                aim_run.track(scheduler.get_last_lr(), name="lr", epoch=epoch)
+                aim_run.track(scheduler.get_lr(), name="lr", epoch=epoch)
+
+                if isinstance(criterion, MapNetCriterion):
+                    aim_run.track(criterion.sax, name="sax", epoch=epoch)
+                    aim_run.track(criterion.saq, name="saq", epoch=epoch)
+                    aim_run.track(criterion.srx, name="srx", epoch=epoch)
+                    aim_run.track(criterion.srq, name="srq", epoch=epoch)
 
                 if phase == "val" and epoch_loss <= best_loss:
                     best_model = model

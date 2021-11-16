@@ -43,19 +43,31 @@ def reverse_normalization(
 
 
 def test_model(
-    model: torch.nn.Module, dataloaders: DataLoader
+    model: torch.nn.Module, dataloaders: DataLoader, device: torch.device
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     model.eval()
     torch.set_grad_enabled(False)
     predictions = []
-    targets = dataloaders.dataset.original_df
-    for x, _ in dataloaders:
+    targets = []
+    for x, y in dataloaders:
+        x = torch.unsqueeze(x, dim=1).to(device=device)
         predictions.append(model(x))
+        targets.append(y)
+    
+    predictions = torch.cat(predictions)
+    targets = torch.cat(targets)
 
-    if len(predictions):
-        predictions = predictions[0]
+    predictions = predictions.squeeze(dim=1)
+
+    import pdb; pdb.set_trace()
+
     predictions = pd.DataFrame(
         predictions.cpu().data.numpy(),
         columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
     )
+
+    targets = pd.DataFrame(
+        targets.cpu().data.numpy(), columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
+    )
+
     return targets, predictions

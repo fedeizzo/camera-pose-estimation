@@ -33,6 +33,7 @@ def get_loss(config_loss: dict, device: torch.device):
         criterion = weighted_mse_loss(torch.Tensor(config_loss["weights"]).to(device))
     elif config_loss["type"] == "mapnet_criterion":
         criterion = MapNetCriterion(
+            device=device,
             sax=0.0,
             saq=config_loss["beta"],
             srx=0.0,
@@ -84,6 +85,7 @@ class QuaternionLoss(nn.Module):
 class MapNetCriterion(nn.Module):
     def __init__(
         self,
+        device: torch.device,
         t_loss_fn=nn.L1Loss(),
         q_loss_fn=nn.L1Loss(),
         sax=0.0,
@@ -109,10 +111,10 @@ class MapNetCriterion(nn.Module):
         self.learn_gamma = learn_gamma
         self.t_loss_fn = t_loss_fn
         self.q_loss_fn = q_loss_fn
-        self.sax = nn.Parameter(torch.Tensor([sax]), requires_grad=learn_beta)
-        self.saq = nn.Parameter(torch.Tensor([saq]), requires_grad=learn_beta)
-        self.srx = nn.Parameter(torch.Tensor([srx]), requires_grad=learn_gamma)
-        self.srq = nn.Parameter(torch.Tensor([srq]), requires_grad=learn_gamma)
+        self.sax = nn.Parameter(torch.Tensor([sax]).to(device), requires_grad=learn_beta)
+        self.saq = nn.Parameter(torch.Tensor([saq]).to(device), requires_grad=learn_beta)
+        self.srx = nn.Parameter(torch.Tensor([srx]).to(device), requires_grad=learn_gamma)
+        self.srq = nn.Parameter(torch.Tensor([srq]).to(device), requires_grad=learn_gamma)
 
     def forward(self, pred, targ):
         """
