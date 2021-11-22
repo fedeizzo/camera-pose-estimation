@@ -1,0 +1,12 @@
+[environment]
+experiment_name = "mapnet"
+run_name = "run_name"
+
+[dataloader]
+sequences = {"test": "seq-02"}
+
+[paths]
+net_weights_dir = "path"
+dataset = "path"
+targets = "path"
+predictions = "path"
