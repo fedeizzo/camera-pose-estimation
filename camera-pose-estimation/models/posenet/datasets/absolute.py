@@ -6,7 +6,7 @@ import os
 # from dataset import load_images
 from pathlib import PosixPath
 from os import listdir
-from typing import Tuple, Optional
+from typing import Optional
 
 from torch.utils.data import Dataset
 from torchvision import transforms as T
@@ -137,7 +137,7 @@ class SevenScenes(Dataset):
 
         rotation_matrix = quat2mat(quaternion)
         xyz_position = np.dot(-(rotation_matrix.T), translation_vector)
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         return np.concatenate((xyz_position, quaternion))
 
     def load_image(self, image_path: PosixPath) -> torch.Tensor:
@@ -201,7 +201,7 @@ class MapNetDataset(Dataset):
 
     def __getitem__(self, idxs):
         images, poses = self.inner_dataset[self.X[idxs]]
-        images = self.transforms(images)
+        # images = self.transforms(images)
 
         return (images, poses)
 

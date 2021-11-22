@@ -53,13 +53,11 @@ def test_model(
         x = torch.unsqueeze(x, dim=1).to(device=device)
         predictions.append(model(x))
         targets.append(y)
-    
+
     predictions = torch.cat(predictions)
     targets = torch.cat(targets)
 
     predictions = predictions.squeeze(dim=1)
-
-    import pdb; pdb.set_trace()
 
     predictions = pd.DataFrame(
         predictions.cpu().data.numpy(),
