@@ -11,6 +11,7 @@ from typing import Tuple, Optional
 from torch.utils.data import Dataset
 from torchvision import transforms as T
 from PIL import Image
+from transforms3d.quaternions import quat2mat
 
 
 def get_absolute_sample_from_row(df_row):
@@ -19,7 +20,15 @@ def get_absolute_sample_from_row(df_row):
     """
     x = df_row.image
     y = torch.Tensor(
-        [df_row.tx, df_row.ty, df_row.tz, df_row.qx, df_row.qy, df_row.qz, df_row.qw,]
+        [
+            df_row.tx,
+            df_row.ty,
+            df_row.tz,
+            df_row.qx,
+            df_row.qy,
+            df_row.qz,
+            df_row.qw,
+        ]
     )
 
     return x, y
@@ -62,7 +71,12 @@ class AbsolutePoseDataset(Dataset):
         self.Y = []
         df = pd.read_csv(dataset_path)
 
-        transforms = T.Compose([T.Resize(224), T.CenterCrop(224),])
+        transforms = T.Compose(
+            [
+                T.Resize(224),
+                T.CenterCrop(224),
+            ]
+        )
 
         if isinstance(df, pd.DataFrame):
             images = load_images(
@@ -118,9 +132,13 @@ class SevenScenes(Dataset):
 
     def load_pose(self, pose_path: PosixPath) -> np.ndarray:
         homogeneous_matrix = np.loadtxt(pose_path)
-        xyz = homogeneous_matrix[:3, 3]
-        wxyz = np.array((homogeneous_to_quaternion(homogeneous_matrix)))
-        return np.concatenate((xyz, wxyz))
+        translation_vector = homogeneous_matrix[:3, 3]
+        quaternion = np.array((homogeneous_to_quaternion(homogeneous_matrix)))
+
+        rotation_matrix = quat2mat(quaternion)
+        xyz_position = np.dot(-(rotation_matrix.T), translation_vector)
+        import pdb; pdb.set_trace()
+        return np.concatenate((xyz_position, quaternion))
 
     def load_image(self, image_path: PosixPath) -> torch.Tensor:
         transforms = T.Compose(
@@ -152,7 +170,9 @@ class MapNetDataset(Dataset):
         if seq:
             self.inner_dataset = SevenScenes(path, seq)
         else:
-            raise NotImplementedError("Support for other datasets not implemented")
+            raise NotImplementedError(
+                "Support for other datasets not implemented"
+            )
 
         skips = skip * np.ones(steps - 1)
         skips = np.insert(skips, 0, 0)
@@ -163,7 +183,9 @@ class MapNetDataset(Dataset):
         idxs = []
         for idx in range(len(self.inner_dataset)):
             tmp_idx = idx + offsets
-            idxs.append(np.minimum(np.maximum(tmp_idx, 0), len(self.inner_dataset) - 1))
+            idxs.append(
+                np.minimum(np.maximum(tmp_idx, 0), len(self.inner_dataset) - 1)
+            )
 
         self.X = torch.from_numpy(np.array(idxs)).long()
         self.transforms = T.Compose(
