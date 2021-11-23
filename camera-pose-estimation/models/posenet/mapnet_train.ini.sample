@@ -14,7 +14,7 @@ num_workers = 4
 batch_size = 16
 step = 3
 skip = 10
-sequence = {"train": "seq-01", "validation": "seq-02"}
+sequences = {"train": "seq-01", "validation": "seq-02"}
 color_jitter = 0.5
 
 [loss]

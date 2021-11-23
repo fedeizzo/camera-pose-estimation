@@ -137,7 +137,6 @@ class SevenScenes(Dataset):
 
         rotation_matrix = quat2mat(quaternion)
         xyz_position = np.dot(-(rotation_matrix.T), translation_vector)
-        # import pdb; pdb.set_trace()
         return np.concatenate((xyz_position, quaternion))
 
     def load_image(self, image_path: PosixPath) -> torch.Tensor:
