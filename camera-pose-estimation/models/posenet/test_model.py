@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 
 from torch.utils.data import DataLoader
+from datasets.absolute import qexp_map
 from typing import Tuple
 
 
@@ -59,13 +60,22 @@ def test_model(
 
     predictions = predictions.squeeze(dim=1)
 
+    predictions = predictions.detach().cpu().numpy()
+    targets = targets.detach().cpu().numpy()
+
+    predictions_quat = np.apply_along_axis(qexp_map, 1, predictions[:, 3:])
+    predictions_xyz = predictions[:, :3]
+    targets_quat = np.apply_along_axis(qexp_map, 1, targets[:, 3:])
+    targets_xyz = targets[:, :3]
+
     predictions = pd.DataFrame(
-        predictions.cpu().data.numpy(),
+        np.concatenate((predictions_xyz, predictions_quat), 1),
         columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
     )
 
     targets = pd.DataFrame(
-        targets.cpu().data.numpy(), columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
+        np.concatenate((targets_xyz, targets_quat), 1),
+        columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
     )
 
     return targets, predictions

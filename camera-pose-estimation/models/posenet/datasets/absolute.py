@@ -11,7 +11,7 @@ from typing import Optional
 from torch.utils.data import Dataset
 from torchvision import transforms as T
 from PIL import Image
-from transforms3d.quaternions import quat2mat
+from transforms3d.quaternions import quat2mat, qnorm, qeye
 
 
 def get_absolute_sample_from_row(df_row):
@@ -56,6 +56,47 @@ def homogeneous_to_quaternion(matrix):
         q[3] = M[k, j] - M[j, k]
     q *= 0.5 / np.sqrt(t * M[3, 3])
     return q
+
+
+def qlog(q: np.ndarray):
+    q = np.array(q)  # To ensure there is a dtype
+    qnorm_ = qnorm(q)
+    if qnorm_ == 0.0:
+        return qeye(q.dtype)
+
+    w, v = q[0], q[1:]
+    vnorm = np.sqrt(np.dot(v, v))
+    result = np.zeros((4,), q.dtype)
+
+    if vnorm == 0.0:
+        return qeye(q.dtype)
+
+    result[0] = np.log(qnorm_)
+    result[1:] = v / vnorm * np.arccos(w / qnorm_)
+    return result
+
+
+def qlog_map(q):
+  """
+  Applies logarithm map to q
+  :param q: (4,)
+  :return: (3,)
+  """
+  if all(q[1:] == 0):
+    q = np.zeros(3)
+  else:
+    q = np.arccos(q[0]) * q[1:] / np.linalg.norm(q[1:])
+  return q
+
+def qexp_map(q):
+  """
+  Applies the exponential map to q
+  :param q: (3,)
+  :return: (4,)
+  """
+  n = np.linalg.norm(q)
+  q = np.hstack((np.cos(n), np.sinc(n/np.pi)*q))
+  return q
 
 
 class AbsolutePoseDataset(Dataset):
@@ -104,7 +145,10 @@ class AbsolutePoseDataset(Dataset):
 
 
 class SevenScenes(Dataset):
-    def __init__(self, dataset_path: PosixPath, seq: str):
+    def __init__(
+        self, dataset_path: PosixPath, seq: str, use_qlog: bool = True
+    ):
+        self.use_qlog = use_qlog
         sequence_path = os.path.join(dataset_path, seq)
         files = listdir(sequence_path)
 
@@ -135,9 +179,15 @@ class SevenScenes(Dataset):
         translation_vector = homogeneous_matrix[:3, 3]
         quaternion = np.array((homogeneous_to_quaternion(homogeneous_matrix)))
 
+        # quat_normalized = quaternion / np.sqrt(np.dot(quaternion, quaternion))
+        # quat_log = qlog(quat_normalized)
+        quat_log_mapped = qlog_map(quaternion)
         rotation_matrix = quat2mat(quaternion)
         xyz_position = np.dot(-(rotation_matrix.T), translation_vector)
-        return np.concatenate((xyz_position, quaternion))
+        if self.use_qlog:
+            return np.concatenate((xyz_position, quat_log_mapped))
+        else:
+            return np.concatenate((xyz_position, quaternion))
 
     def load_image(self, image_path: PosixPath) -> torch.Tensor:
         transforms = T.Compose(

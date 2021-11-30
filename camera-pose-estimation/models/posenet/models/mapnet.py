@@ -16,7 +16,7 @@ class PoseNet(nn.Module):
         self.feature_extractor.fc = nn.Linear(out_feature_extractor, feature_dimension)
 
         self.xyz_encoder = nn.Linear(feature_dimension, 3)
-        self.wxyz_encoder = nn.Linear(feature_dimension, 4)
+        self.wxyz_encoder = nn.Linear(feature_dimension, 3)
 
         init_modules = [
             self.feature_extractor.fc,
