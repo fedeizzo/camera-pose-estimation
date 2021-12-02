@@ -13,6 +13,16 @@ from torchvision import transforms as T
 from PIL import Image
 from transforms3d.quaternions import quat2mat, qnorm, qeye
 
+def get_image_transform():
+    return T.Compose(
+        [
+            T.Resize(224),
+            T.CenterCrop(224),
+            T.ToTensor(),
+            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
+
 
 def get_absolute_sample_from_row(df_row):
     """

@@ -11,8 +11,9 @@ from config_parser import ConfigParser
 from torch.optim import lr_scheduler, SGD, Adam
 from torch.utils.data import Dataset, DataLoader
 from typing import Optional, Dict, Callable, Tuple, List
+from PIL import Image
 
-from datasets.absolute import AbsolutePoseDataset, MapNetDataset, SevenScenes
+from datasets.absolute import AbsolutePoseDataset, MapNetDataset, SevenScenes, get_image_transform
 from datasets.relative import RelativePoseDataset
 from models.posenet import get_posenet
 from models.menet import MeNet
@@ -57,7 +58,9 @@ def get_device() -> torch.device:
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(config_model, device: torch.device) -> Tuple[torch.nn.Module, Dataset]:
+def get_model(
+    config_model, device: torch.device
+) -> Tuple[torch.nn.Module, Dataset]:
     if config_model["name"] == "posenet":
         model = get_posenet(config_model["outputs"]).to(device)
         dataset_type = AbsolutePoseDataset
@@ -98,7 +101,10 @@ def get_dataloader(
         )
     else:
         dataset = dataset_type(
-            dataset_path, config_paths["images"], device, is_train=phase == "train"
+            dataset_path,
+            config_paths["images"],
+            device,
+            is_train=phase == "train",
         )
 
     return DataLoader(
@@ -125,7 +131,12 @@ def get_dataloaders(
 
     for phase, dataset_path in zip(phases, dataset_paths):
         dataloaders[phase] = get_dataloader(
-            dataset_path, config_dataloader, config_paths, dataset_type, phase, device,
+            dataset_path,
+            config_dataloader,
+            config_paths,
+            dataset_type,
+            phase,
+            device,
         )
     return dataloaders
 
@@ -133,7 +144,9 @@ def get_dataloaders(
 def get_optimizer(config_optimizer: dict, paramters) -> torch.optim.Optimizer:
     if config_optimizer["name"] == "SGD":
         optimizer = SGD(
-            paramters, lr=config_optimizer["lr"], momentum=config_optimizer["momentum"],
+            paramters,
+            lr=config_optimizer["lr"],
+            momentum=config_optimizer["momentum"],
         )
     elif config_optimizer["name"] == "adam":
         optimizer = Adam(
@@ -165,7 +178,8 @@ def train(config_path: str):
     device = get_device()
     set_random_seed(config["environment"]["seed"])
     experiment_dir = create_experiment_dir(
-        config["paths"]["net_weights_dir"], config["environment"]["experiment_name"],
+        config["paths"]["net_weights_dir"],
+        config["environment"]["experiment_name"],
     )
 
     aim_run = Run(
@@ -176,7 +190,9 @@ def train(config_path: str):
     aim_run[...] = config.get_config()
     save_config_ro(
         config_path,
-        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini"),
+        os.path.join(
+            experiment_dir, config["environment"]["run_name"] + "_config.ini"
+        ),
     )
 
     train_dataset_path = config["paths"]["train_dataset"]
@@ -225,7 +241,8 @@ def train(config_path: str):
         "cuda" if torch.cuda.is_available() else "cpu",
     )
     net_weights_path = os.path.join(
-        experiment_dir, config["environment"]["run_name"] + ".pth",
+        experiment_dir,
+        config["environment"]["run_name"] + ".pth",
     )
     torch.save(trained_model.state_dict(), net_weights_path)
 
@@ -234,10 +251,13 @@ def test(config_path: str):
     config = ConfigParser(config_path)
     device = get_device()
     experiment_dir = create_experiment_dir(
-        config["paths"]["net_weights_dir"], config["environment"]["experiment_name"],
+        config["paths"]["net_weights_dir"],
+        config["environment"]["experiment_name"],
     )
     train_configs = ConfigParser(
-        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini")
+        os.path.join(
+            experiment_dir, config["environment"]["run_name"] + "_config.ini"
+        )
     )
     set_random_seed(train_configs["environment"]["seed"])
 
@@ -245,13 +265,16 @@ def test(config_path: str):
 
     model, dataset_type = get_model(train_configs["model"], device)
     weights_path = os.path.join(
-        experiment_dir, config["environment"]["run_name"] + ".pth",
+        experiment_dir,
+        config["environment"]["run_name"] + ".pth",
     )
     model.load_state_dict(torch.load(weights_path))
     model = model.to(get_device())
 
     # TODO
-    train_configs["dataloader"]["sequences"] = config["dataloader"]["sequences"]
+    train_configs["dataloader"]["sequences"] = config["dataloader"][
+        "sequences"
+    ]
 
     dataloaders = get_dataloaders(
         train_configs["dataloader"],
@@ -271,7 +294,7 @@ def test(config_path: str):
 
     # with open(quaternion_scaler_path, "rb") as f:
     #     quaternion_scaler = pickle.load(f)
-    # with open(translation_scaler_path, "rb") as f:
+    # with open(translation_scaler_path, "rimgb") as f:
     #     translation_scaler = pickle.load(f)
 
     # predictions = reverse_normalization(
@@ -289,14 +312,53 @@ def test(config_path: str):
     # pdb.set_trace()
 
 
+def inference(config_path="./inference.ini", image: Image = None):
+    config = ConfigParser(config_path)
+    device = get_device()
+    experiment_dir = create_experiment_dir(
+        config["paths"]["net_weights_dir"],
+        config["environment"]["experiment_name"],
+    )
+    train_configs = ConfigParser(
+        os.path.join(
+            experiment_dir, config["environment"]["run_name"] + "_config.ini"
+        )
+    )
+    set_random_seed(train_configs["environment"]["seed"])
+
+    model, _ = get_model(train_configs["model"], device)
+    weights_path = os.path.join(
+        experiment_dir,
+        config["environment"]["run_name"] + ".pth",
+    )
+    model.load_state_dict(torch.load(weights_path))
+    model = model.to(get_device())
+
+    if image is not None:
+        transformers =get_image_transform() 
+        img = transformers(image).unsqueeze(0).unsqueeze(0).to(device)
+        prediction = model(img)
+        prediction = prediction.squeeze(0).squeeze(0)
+        del model
+        return prediction.detach().cpu().numpy()
+    else:
+        raise NotImplementedError("Inference mode not yet implemented")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Base model")
-    parser.add_argument("-c", "--config", type=str, required=True, help="Config file")
-    parser.add_argument("-t", "--train", action="store_true", help="Train model flag")
+    parser.add_argument(
+        "-c", "--config", type=str, required=True, help="Config file"
+    )
+    parser.add_argument(
+        "-t", "--train", action="store_true", help="Train model flag"
+    )
     parser.add_argument(
         "-i", "--inference", action="store_true", help="Inference model flag"
     )
-    parser.add_argument("-e", "--test", action="store_true", help="Test model flag")
+    parser.add_argument(
+        "-e", "--test", action="store_true", help="Test model flag"
+    )
 
     args = parser.parse_args()
     config_path = args.config

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Camera pose estimation</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="css/style.css" rel="stylesheet">
+    </head>
+    <body>
+        <form action="/numerical_pose" method="POST"  enctype="multipart/form-data">
+            <label for="img">Select image for numerical pose:</label><br>
+            <input type="file" id="img" name="img" accept="image/*">
+            <br><br>
+            <input type="submit">
+        </form>
+        <form action="/visual_pose" method="POST"  enctype="multipart/form-data">
+            <label for="img">Select image for visual pose:</label><br>
+            <input type="file" id="img" name="img" accept="image/*">
+            <br><br>
+            <input type="submit">
+        </form>
+    </body>
+</html>
