@@ -95,12 +95,13 @@ def main(args):
         train, validation, test = split(
             positions, args.train_split, args.validation_split, args.test_split
         )
-        train, validation, test = normalize(
-            train.copy(deep=True),
-            validation.copy(deep=True),
-            test.copy(deep=True),
-            input_path,
-        )
+        if not args.no_normalization:
+            train, validation, test = normalize(
+                train.copy(deep=True),
+                validation.copy(deep=True),
+                test.copy(deep=True),
+                input_path,
+            )
         train_file = input_path / "train.csv"
         validation_file = input_path / "validation.csv"
         test_file = input_path / "test.csv"
@@ -119,6 +120,12 @@ if __name__ == "__main__":
         type=str,
         required=True,
         help="Input path where images and models are saved",
+    )
+    parser.add_argument(
+        "-n",
+        "--no_normalization",
+        action="store_true",
+        help="Block normalization process",
     )
     parser.add_argument(
         "-t",

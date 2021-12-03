@@ -6,12 +6,13 @@ import os
 # from dataset import load_images
 from pathlib import PosixPath
 from os import listdir
-from typing import Optional
+from typing import Optional, Set
 
 from torch.utils.data import Dataset
 from torchvision import transforms as T
 from PIL import Image
 from transforms3d.quaternions import quat2mat, qnorm, qeye
+
 
 def get_image_transform():
     return T.Compose(
@@ -87,51 +88,43 @@ def qlog(q: np.ndarray):
 
 
 def qlog_map(q):
-  """
-  Applies logarithm map to q
-  :param q: (4,)
-  :return: (3,)
-  """
-  if all(q[1:] == 0):
-    q = np.zeros(3)
-  else:
-    q = np.arccos(q[0]) * q[1:] / np.linalg.norm(q[1:])
-  return q
+    """
+    Applies logarithm map to q
+    :param q: (4,)
+    :return: (3,)
+    """
+    if all(q[1:] == 0):
+        q = np.zeros(3)
+    else:
+        q = np.arccos(q[0]) * q[1:] / np.linalg.norm(q[1:])
+    return q
+
 
 def qexp_map(q):
-  """
-  Applies the exponential map to q
-  :param q: (3,)
-  :return: (4,)
-  """
-  n = np.linalg.norm(q)
-  q = np.hstack((np.cos(n), np.sinc(n/np.pi)*q))
-  return q
+    """
+    Applies the exponential map to q
+    :param q: (3,)
+    :return: (4,)
+    """
+    n = np.linalg.norm(q)
+    q = np.hstack((np.cos(n), np.sinc(n / np.pi) * q))
+    return q
 
 
 class AbsolutePoseDataset(Dataset):
     def __init__(
         self,
-        dataset_path: str,
-        image_folder: str,
+        dataset_path: PosixPath,
+        image_folder: PosixPath,
         device,
-        is_train=True,
-        transforms=None,
     ) -> None:
         self.X = []
         self.Y = []
         df = pd.read_csv(dataset_path)
 
-        transforms = T.Compose(
-            [
-                T.Resize(224),
-                T.CenterCrop(224),
-            ]
-        )
-
         if isinstance(df, pd.DataFrame):
-            images = load_images(
-                image_folder, set(list(df["image_t"].values)), transforms
+            images = self.load_images(
+                image_folder, set(list(df["image"].values))
             )
             for row in df.itertuples():
                 curr_sample = get_absolute_sample_from_row(row)
@@ -144,6 +137,15 @@ class AbsolutePoseDataset(Dataset):
         self.Y = torch.stack(self.Y)
         self.images = images
         self.device = device
+
+    def load_image(self, image_path: PosixPath) -> torch.Tensor:
+        transforms = get_image_transform()
+        return transforms(Image.open(image_path))
+
+    def load_images(self, image_folder: PosixPath, image_names: Set[str]):
+        sorted_names = sorted(image_names)
+        images = {img: self.load_image(image_folder/ img) for img in sorted_names}
+        return images
 
     def __getitem__(self, idxs):
         X = torch.Tensor(self.images[self.X[idxs]]).to(self.device)
@@ -200,14 +202,7 @@ class SevenScenes(Dataset):
             return np.concatenate((xyz_position, quaternion))
 
     def load_image(self, image_path: PosixPath) -> torch.Tensor:
-        transforms = T.Compose(
-            [
-                T.Resize(224),
-                T.CenterCrop(224),
-                T.ToTensor(),
-                T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-            ]
-        )
+        transforms = get_image_transform()
         return transforms(Image.open(image_path))
 
     def __getitem__(self, idxs):
@@ -220,17 +215,21 @@ class SevenScenes(Dataset):
 class MapNetDataset(Dataset):
     def __init__(
         self,
-        path: PosixPath,
+        path: str,
         steps: int,
         skip: int,
         color_jitter: float,
         seq: Optional[str],
+        image_path: Optional[str],
+        device: Optional[torch.device],
     ):
         if seq:
-            self.inner_dataset = SevenScenes(path, seq)
+            self.inner_dataset = SevenScenes(PosixPath(path), seq)
+        elif image_path is not None and device is not None:
+            self.inner_dataset = AbsolutePoseDataset(PosixPath(path), PosixPath(image_path), device)
         else:
-            raise NotImplementedError(
-                "Support for other datasets not implemented"
+            raise ValueError(
+                "current configuration cannot be used either with 7scenes or absolute pose datasets"
             )
 
         skips = skip * np.ones(steps - 1)

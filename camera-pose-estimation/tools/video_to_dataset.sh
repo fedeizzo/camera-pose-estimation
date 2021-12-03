@@ -223,22 +223,28 @@ def main(args):
     workspace_path = f"{args.output_path}/workspace"
     if not isdir(img_path):
         makedirs(img_path)
-        video_to_images(args.video, args.frames, img_path)
+        if args.frames is not None:
+            video_to_images(args.video, args.frames, img_path)
+        else:
+            raise ValueError(f"Specify a framerate")
     else:
         print(
             "INFO: imgs folder already present, if you want to change framerate sampling delete it"
         )
     if not isdir(workspace_path):
         makedirs(workspace_path)
-    result = colmap_reconstruction(
-        args.camera_refence_path,
-        workspace_path,
-        img_path,
-        args.num_threads,
-        args.video,
-        args.quality,
-        args.type,
-    )
+
+    if arsgs.type is not None and args.quality is not None:
+        result = colmap_reconstruction(
+            args.camera_refence_path,
+            workspace_path,
+            img_path,
+            args.num_threads,
+            args.video,
+            args.quality,
+            args.type,
+        )
+
     if not result:
         rmtree(img_path)
         rmtree(workspace_path)
@@ -284,7 +290,7 @@ if __name__ == "__main__":
         "-f",
         "--frames",
         type=str,
-        required=True,
+        required=False,
         help="Number of frames to extract",
     )
     parser.add_argument(
@@ -306,10 +312,10 @@ if __name__ == "__main__":
         "-q",
         "--quality",
         type=str,
-        required=True,
+        required=False,
         choices=["low", "medium", "high", "extreme"],
         help="Quality of colmap reconstruction",
     )
-    parser.add_argument("-t", "--type", required=True, choices=["sparse", "dense"])
+    parser.add_argument("-t", "--type", required=False, choices=["sparse", "dense"])
     args = parser.parse_args()
     main(args)

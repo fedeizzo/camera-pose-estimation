@@ -1,5 +1,3 @@
-# https://github.com/ElephantGit/pytorch-posenet/blob/master/train.py
-
 import argparse
 import random
 import numpy as np
@@ -13,7 +11,12 @@ from torch.utils.data import Dataset, DataLoader
 from typing import Optional, Dict, Callable, Tuple, List
 from PIL import Image
 
-from datasets.absolute import AbsolutePoseDataset, MapNetDataset, SevenScenes, get_image_transform
+from datasets.absolute import (
+    AbsolutePoseDataset,
+    MapNetDataset,
+    SevenScenes,
+    get_image_transform,
+)
 from datasets.relative import RelativePoseDataset
 from models.posenet import get_posenet
 from models.menet import MeNet
@@ -28,6 +31,7 @@ from test_model import (
 )
 from aim import Run
 from torchinfo import summary
+from pathlib import PosixPath
 
 from os import makedirs, chmod
 from os.path import join
@@ -87,17 +91,32 @@ def get_dataloader(
     device: torch.device,
 ) -> DataLoader:
     if dataset_type == MapNetDataset and phase != "test":
+        seq = config_dataloader.get("sequences", None)
+        if seq:
+            seq = seq[phase]
         dataset = MapNetDataset(
             path=dataset_path,
             steps=config_dataloader["step"],
             skip=config_dataloader["skip"],
             color_jitter=config_dataloader["color_jitter"],
-            seq=config_dataloader["sequences"][phase],
+            seq=seq,
+            image_path=config_paths.get("images"),
+            device=device,
         )
-    elif dataset_type == MapNetDataset and phase == "test":
+    elif (
+        dataset_type == MapNetDataset
+        and phase == "test"
+        and "sequences" in config_dataloader
+    ):
         dataset = SevenScenes(
             dataset_path=dataset_path,
             seq=config_dataloader["sequences"][phase],
+        )
+    elif dataset_type == MapNetDataset and phase == "test":
+        dataset = AbsolutePoseDataset(
+            dataset_path=dataset_path,
+            image_path=config_paths.get("images"),
+            device=device,
         )
     else:
         dataset = dataset_type(
@@ -335,7 +354,7 @@ def inference(config_path="./inference.ini", image: Image = None):
     model = model.to(get_device())
 
     if image is not None:
-        transformers =get_image_transform() 
+        transformers = get_image_transform()
         img = transformers(image).unsqueeze(0).unsqueeze(0).to(device)
         prediction = model(img)
         prediction = prediction.squeeze(0).squeeze(0)
