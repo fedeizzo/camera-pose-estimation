@@ -5,11 +5,21 @@ This repo contains some implementations of relative and absolute camera pose est
 Currently absolute pose estimation models are:
 
 - PoseNet
+- MapNet
 
 ## Relative pose estimation models
 Currently relative pose estimation models are:
 
 - MeNet
+
+## Sources
+Sources of the techniques used are: (TODO)
+
+- paper Colmap
+- paper that explains all camera pose estimation attempts during the time
+- paper PoseNet
+- paper MapNet
+- paper MeNet
 
 ## Dataset
 Datasets are created using [Colmap](https://colmap.github.io/), this tool digests a video and compute the sparse and/or dense reconstruction of the environment. A intermediate step of this process is the camera pose estimation.
