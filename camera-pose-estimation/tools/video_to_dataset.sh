@@ -126,9 +126,13 @@ def get_reference_points(points_file: str):
 
 
 def get_camera_positions(images_file: str):
+
     images = list(read_images_binary(images_file).values())
-    images.sort(key=lambda x: int(x.name[:-4]))
-    names = np.array(list(map(lambda x: x.name, images)))
+    # TODO: fix this
+    # images.sort(key=lambda x: int(x.name[:-4]))
+    images.sort(key=lambda x: int(x.name[3:-4]))
+    # names = np.array(list(map(lambda x: x.name, images)))
+    names = np.array(list(map(lambda x: f"{int(x.name[3:-4]):04}.png", images)))
     tvecs = np.array(list(map(lambda x: x.tvec, images)))
     qvecs = np.array(list(map(lambda x: x.qvec, images)))
     xyz_positions = []
@@ -234,7 +238,7 @@ def main(args):
     if not isdir(workspace_path):
         makedirs(workspace_path)
 
-    if arsgs.type is not None and args.quality is not None:
+    if args.type is not None and args.quality is not None:
         result = colmap_reconstruction(
             args.camera_refence_path,
             workspace_path,
@@ -245,10 +249,10 @@ def main(args):
             args.type,
         )
 
-    if not result:
-        rmtree(img_path)
-        rmtree(workspace_path)
-        raise ValueError(f"Error during colmap reconstruction")
+        if not result:
+            rmtree(img_path)
+            rmtree(workspace_path)
+            raise ValueError(f"Error during colmap reconstruction")
 
     images_file = f"{workspace_path}/sparse/0/images.bin"
     points_file = f"{workspace_path}/sparse/0/points3D.bin"

@@ -32,9 +32,14 @@ def split(
     print(f"\tvalidation: [{train_split}-{validation_split}[")
     print(f"\ttest: [{validation_split}-{test_split}[")
 
-    train = positions.iloc[:train_split]
-    validation = positions.iloc[train_split:validation_split]
-    test = positions.iloc[validation_split:test_split]
+    train = positions.iloc[0::3]
+    validation = positions.iloc[1::3]
+    test = positions.iloc[2::3]
+
+    # train = positions.iloc[:train_split]
+    # validation = positions.iloc[train_split:validation_split]
+    # test = positions.iloc[validation_split:test_split]
+    
 
     return train, validation, test
 
@@ -96,6 +101,7 @@ def main(args):
             positions, args.train_split, args.validation_split, args.test_split
         )
         if not args.no_normalization:
+            print("Normalizing data...")
             train, validation, test = normalize(
                 train.copy(deep=True),
                 validation.copy(deep=True),
