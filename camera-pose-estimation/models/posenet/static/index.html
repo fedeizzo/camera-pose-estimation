@@ -4,20 +4,194 @@
         <title>Camera pose estimation</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link href="css/style.css" rel="stylesheet">
     </head>
     <body>
-        <form action="/numerical_pose" method="POST"  enctype="multipart/form-data">
-            <label for="img">Select image for numerical pose:</label><br>
-            <input type="file" id="img" name="img" accept="image/*">
-            <br><br>
-            <input type="submit">
-        </form>
-        <form action="/visual_pose" method="POST"  enctype="multipart/form-data">
-            <label for="img">Select image for visual pose:</label><br>
-            <input type="file" id="img" name="img" accept="image/*">
-            <br><br>
-            <input type="submit">
-        </form>
+        <div class="wrapper">
+            <div class="drop-zone">
+                <span class="drop-zone__prompt">Drop file here or click to upload</span>
+                <input type="file" name="img" id="img_input" class="drop-zone__input">
+            </div>
+            <button class="button btnFade btnBlueGreen" onclick="getMap()">Submit</button>
+            <div class="loader" id="loading" hidden></div>
+        </div>
+        <img id="map"><img>
+        <style>
+        .wrapper {
+          width: 300px;
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+        .drop-zone {
+          height: 200px;
+          width: 200px;
+          text-align: center;
+          font-family: "Quicksand", sans-serif;
+          font-weight: 500;
+          font-size: 20px;
+          cursor: pointer;
+          color: #cccccc;
+          border: 4px dashed #009578;
+          border-radius: 10px;
+        }
+
+        .drop-zone--over {
+          border-style: solid;
+        }
+
+        .drop-zone__input {
+          display: none;
+        }
+
+        .drop-zone__thumb {
+          width: 100%;
+          height: 100%;
+          border-radius: 10px;
+          overflow: hidden;
+          background-color: #cccccc;
+          background-size: cover;
+          position: relative;
+        }
+
+        .drop-zone__thumb::after {
+          content: attr(data-label);
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          padding: 5px 0;
+          color: #ffffff;
+          background: rgba(0, 0, 0, 0.75);
+          font-size: 14px;
+          text-align: center;
+        }
+        .btnBlueGreen {
+          background: #009578;
+        }
+        .btnFade.btnBlueGreen:hover {
+          background: #21825B;
+        }
+        .button {
+          display: block;
+          border: 0;
+          text-align: center;
+          float: left;
+          width: 120px;
+          padding: 0;
+          margin: 10px 20px 10px 0;
+          font-weight: 600;
+          text-align: center;
+          line-height: 50px;
+          color: #FFF;
+          border-radius: 5px;
+          transition: all 0.2s ;
+        }
+        .loader {
+          border: 16px solid #f3f3f3; /* Light grey */
+          border-top: 16px solid #3498db; /* Blue */
+          border-radius: 50%;
+          width: 120px;
+          height: 120px;
+          animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        </style>
+        <script>
+            document.querySelectorAll(".drop-zone__input").forEach((inputElement) => {
+                const dropZoneElement = inputElement.closest(".drop-zone");
+
+                dropZoneElement.addEventListener("click", (e) => {
+                    inputElement.click();
+                });
+
+                inputElement.addEventListener("change", (e) => {
+                    if (inputElement.files.length) {
+                        updateThumbnail(dropZoneElement, inputElement.files[0]);
+                    }
+                });
+
+                dropZoneElement.addEventListener("dragover", (e) => {
+                    e.preventDefault();
+                    dropZoneElement.classList.add("drop-zone--over");
+                });
+
+                ["dragleave", "dragend"].forEach((type) => {
+                    dropZoneElement.addEventListener(type, (e) => {
+                        dropZoneElement.classList.remove("drop-zone--over");
+                    });
+                });
+
+                dropZoneElement.addEventListener("drop", (e) => {
+                    e.preventDefault();
+
+                    if (e.dataTransfer.files.length) {
+                        inputElement.files = e.dataTransfer.files;
+                        updateThumbnail(dropZoneElement, e.dataTransfer.files[0]);
+                    }
+
+                    dropZoneElement.classList.remove("drop-zone--over");
+                });
+            });
+
+            function updateThumbnail(dropZoneElement, file) {
+                let thumbnailElement = dropZoneElement.querySelector(".drop-zone__thumb");
+
+                // First time - remove the prompt
+                if (dropZoneElement.querySelector(".drop-zone__prompt")) {
+                    dropZoneElement.querySelector(".drop-zone__prompt").remove();
+                }
+
+                // First time - there is no thumbnail element, so lets create it
+                if (!thumbnailElement) {
+                    thumbnailElement = document.createElement("div");
+                    thumbnailElement.classList.add("drop-zone__thumb");
+                    dropZoneElement.appendChild(thumbnailElement);
+                }
+
+                thumbnailElement.dataset.label = file.name;
+
+                // Show thumbnail for image files
+                if (file.type.startsWith("image/")) {
+                    const reader = new FileReader();
+
+                    reader.readAsDataURL(file);
+                    reader.onload = () => {
+                        thumbnailElement.style.backgroundImage = `url('${reader.result}')`;
+                    };
+                } else {
+                    thumbnailElement.style.backgroundImage = null;
+                }
+            }
+            function hexToBase64(str) {
+               return btoa(String.fromCharCode.apply(null, str.replace(/\r|\n/g, "").replace(/([\da-fA-F]{2}) ?/g, "0x$1 ").replace(/ +$/, "").split(" ")));
+            }
+
+            function getMap() {
+                var request = new XMLHttpRequest();
+                request.open("POST", "visual_pose");
+                // request.responseType = "arraybuffer";
+                request.onreadystatechange = function() {
+                    if(this.readyState === 4 && this.status === 200) {
+                        document.getElementById("loading").hidden = true;
+                        console.log(this.response);
+                        document.getElementById("map").src = `data:image/jpeg;base64,${btoa(this.response)}`;
+                    }
+                };
+                
+                var img_input = document.getElementById("img_input");
+                var file = img_input.files[0]
+                var formdata = new FormData();
+                formdata.append('img', file);
+
+                document.getElementById("loading").hidden = false;
+                request.send(formdata);
+            }
+        </script>
     </body>
 </html>
