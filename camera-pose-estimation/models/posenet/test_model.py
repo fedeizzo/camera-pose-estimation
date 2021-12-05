@@ -63,19 +63,19 @@ def test_model(
     predictions = predictions.detach().cpu().numpy()
     targets = targets.detach().cpu().numpy()
 
-    predictions_quat = np.apply_along_axis(qexp_map, 1, predictions[:, 3:])
-    predictions_xyz = predictions[:, :3]
-    targets_quat = np.apply_along_axis(qexp_map, 1, targets[:, 3:])
-    targets_xyz = targets[:, :3]
+    if predictions.shape[-1] == 6:
+        predictions_quat = np.apply_along_axis(qexp_map, 1, predictions[:, 3:])
+        predictions_xyz = predictions[:, :3]
+        targets_quat = np.apply_along_axis(qexp_map, 1, targets[:, 3:])
+        targets_xyz = targets[:, :3]
+
+        predictions = np.concatenate([predictions_xyz, predictions_quat], axis=1)
+        targets = np.concatenate([targets_xyz, targets_quat], axis=1)
 
     predictions = pd.DataFrame(
-        np.concatenate((predictions_xyz, predictions_quat), 1),
-        columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
+        predictions, columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
     )
 
-    targets = pd.DataFrame(
-        np.concatenate((targets_xyz, targets_quat), 1),
-        columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
-    )
+    targets = pd.DataFrame(targets, columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],)
 
     return targets, predictions

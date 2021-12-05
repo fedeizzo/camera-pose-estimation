@@ -141,22 +141,20 @@ class MapNetCriterion(nn.Module):
         # abs_loss = (
         #     torch.exp(-self.sax)
         #     * self.t_loss_fn(pred.view(-1, *size[2:])[:, :3], targ.view(-1, *size[2:])[:, :3])
-        #     # + self.sax
+        #     + self.sax
         #     + torch.exp(-self.saq)
         #     * self.q_loss_fn(pred.view(-1, *size[2:])[:, 3:], targ.view(-1, *size[2:])[:, 3:])
-        #     # + self.saq
+        #     + self.saq
         # )
         abs_loss = (
             self.t_loss_fn(
                 pred.view(-1, *size[2:])[:, :3],
                 targ.view(-1, *size[2:])[:, :3],
             )
-            # + self.sax
             + self.q_loss_fn(
                 pred.view(-1, *size[2:])[:, 3:],
                 targ.view(-1, *size[2:])[:, 3:],
             )
-            # + self.saq
         )
 
         # get the VOs
@@ -171,26 +169,23 @@ class MapNetCriterion(nn.Module):
         #         pred_vos.view(-1, *size[2:])[:, :3],
         #         targ_vos.view(-1, *size[2:])[:, :3],
         #     )
-        #     # + self.srx
-        #     # + torch.exp(-self.srq)
-        #     # * self.q_loss_fn(
-        #     #     pred_vos.view(-1, *size[2:])[:, 3:],
-        #     #     targ_vos.view(-1, *size[2:])[:, 3:],
-        #     # )
-        #     # + self.srq
+        #     + self.srx
+        #     + torch.exp(-self.srq)
+        #     * self.q_loss_fn(
+        #         pred_vos.view(-1, *size[2:])[:, 3:],
+        #         targ_vos.view(-1, *size[2:])[:, 3:],
+        #     )
+        #     + self.srq
         # )
         vo_loss = (
             self.t_loss_fn(
                 pred_vos.view(-1, *size[2:])[:, :3],
                 targ_vos.view(-1, *size[2:])[:, :3],
             )
-            # + self.srx
-            # + torch.exp(-self.srq)
-            # * self.q_loss_fn(
-            #     pred_vos.view(-1, *size[2:])[:, 3:],
-            #     targ_vos.view(-1, *size[2:])[:, 3:],
-            # )
-            # + self.srq
+            + self.q_loss_fn(
+                pred_vos.view(-1, *size[2:])[:, 3:],
+                targ_vos.view(-1, *size[2:])[:, 3:],
+            )
         )
 
         # total loss

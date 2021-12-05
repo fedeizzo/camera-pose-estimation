@@ -115,7 +115,7 @@ def get_dataloader(
     elif dataset_type == MapNetDataset and phase == "test":
         dataset = AbsolutePoseDataset(
             dataset_path=dataset_path,
-            image_path=config_paths.get("images"),
+            image_folder=config_paths.get("images"),
             device=device,
         )
     else:
@@ -217,7 +217,6 @@ def train(config_path: str):
     train_dataset_path = config["paths"]["train_dataset"]
     validation_dataset_path = config["paths"]["validation_dataset"]
     # test_dataset_path = config["paths"]["test_dataset"]
-    batch_size = config["dataloader"]["batch_size"]
 
     model, dataset_type = get_model(config["model"], device)
     dataloaders = get_dataloaders(
@@ -280,7 +279,7 @@ def test(config_path: str):
     )
     set_random_seed(train_configs["environment"]["seed"])
 
-    dataset_path = config["paths"]["dataset"]
+    dataset_path = config["paths"]["test_dataset"]
 
     model, dataset_type = get_model(train_configs["model"], device)
     weights_path = os.path.join(
@@ -291,9 +290,9 @@ def test(config_path: str):
     model = model.to(get_device())
 
     # TODO
-    train_configs["dataloader"]["sequences"] = config["dataloader"][
-        "sequences"
-    ]
+    # train_configs["dataloader"]["sequences"] = config["dataloader"][
+    #     "sequences"
+    # ]
 
     dataloaders = get_dataloaders(
         train_configs["dataloader"],

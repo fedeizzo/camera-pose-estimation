@@ -6,7 +6,7 @@ import os
 # from dataset import load_images
 from pathlib import PosixPath
 from os import listdir
-from typing import Optional, Set
+from typing import List, Optional
 
 from torch.utils.data import Dataset
 from torchvision import transforms as T
@@ -31,15 +31,8 @@ def get_absolute_sample_from_row(df_row):
     """
     x = df_row.image
     y = torch.Tensor(
-        [
-            df_row.tx,
-            df_row.ty,
-            df_row.tz,
-            df_row.qx,
-            df_row.qy,
-            df_row.qz,
-            df_row.qw,
-        ]
+        # [df_row.tx, df_row.ty, df_row.tz, df_row.qx, df_row.qy, df_row.qz, df_row.qw,]
+        [df_row.x, df_row.y, df_row.z, df_row.qx, df_row.qy, df_row.qz, df_row.qw,]
     )
 
     return x, y
@@ -113,27 +106,25 @@ def qexp_map(q):
 
 class AbsolutePoseDataset(Dataset):
     def __init__(
-        self,
-        dataset_path: PosixPath,
-        image_folder: PosixPath,
-        device,
+        self, dataset_path: PosixPath, image_folder: PosixPath, device,
     ) -> None:
         self.X = []
         self.Y = []
         df = pd.read_csv(dataset_path)
 
         if isinstance(df, pd.DataFrame):
-            images = self.load_images(
-                image_folder, set(list(df["image"].values))
-            )
-            for row in df.itertuples():
+            # images = self.load_images(image_folder, list(df["image"].values[:100]),)
+            images = self.load_images(image_folder, list(df["image"].values),)
+
+            # for row in list(df.itertuples())[:100]:
+            for row in list(df.itertuples()):
                 curr_sample = get_absolute_sample_from_row(row)
-                self.X.append(curr_sample[0])
+                # self.X.append(curr_sample[0])
                 self.Y.append(curr_sample[1])
         else:
             raise ValueError("Error loading dataset")
 
-        self.X = self.X
+        self.X = torch.stack(images)
         self.Y = torch.stack(self.Y)
         self.images = images
         self.device = device
@@ -142,14 +133,14 @@ class AbsolutePoseDataset(Dataset):
         transforms = get_image_transform()
         return transforms(Image.open(image_path))
 
-    def load_images(self, image_folder: PosixPath, image_names: Set[str]):
+    def load_images(self, image_folder: PosixPath, image_names: List[str]):
         sorted_names = sorted(image_names)
-        images = {img: self.load_image(image_folder/ img) for img in sorted_names}
+        images = [self.load_image(os.path.join(image_folder, img)) for img in sorted_names]
         return images
 
     def __getitem__(self, idxs):
-        X = torch.Tensor(self.images[self.X[idxs]]).to(self.device)
-        Y = self.Y[idxs].to(self.device)
+        X = self.X[idxs]
+        Y = self.Y[idxs]
         return X, Y
 
     def __len__(self):
@@ -157,9 +148,7 @@ class AbsolutePoseDataset(Dataset):
 
 
 class SevenScenes(Dataset):
-    def __init__(
-        self, dataset_path: PosixPath, seq: str, use_qlog: bool = True
-    ):
+    def __init__(self, dataset_path: PosixPath, seq: str, use_qlog: bool = True):
         self.use_qlog = use_qlog
         sequence_path = os.path.join(dataset_path, seq)
         files = listdir(sequence_path)
@@ -226,7 +215,9 @@ class MapNetDataset(Dataset):
         if seq:
             self.inner_dataset = SevenScenes(PosixPath(path), seq)
         elif image_path is not None and device is not None:
-            self.inner_dataset = AbsolutePoseDataset(PosixPath(path), PosixPath(image_path), device)
+            self.inner_dataset = AbsolutePoseDataset(
+                PosixPath(path), PosixPath(image_path), device
+            )
         else:
             raise ValueError(
                 "current configuration cannot be used either with 7scenes or absolute pose datasets"
@@ -241,9 +232,7 @@ class MapNetDataset(Dataset):
         idxs = []
         for idx in range(len(self.inner_dataset)):
             tmp_idx = idx + offsets
-            idxs.append(
-                np.minimum(np.maximum(tmp_idx, 0), len(self.inner_dataset) - 1)
-            )
+            idxs.append(np.minimum(np.maximum(tmp_idx, 0), len(self.inner_dataset) - 1))
 
         self.X = torch.from_numpy(np.array(idxs)).long()
         self.transforms = T.Compose(
