@@ -126,13 +126,9 @@ def get_reference_points(points_file: str):
 
 
 def get_camera_positions(images_file: str):
-
     images = list(read_images_binary(images_file).values())
-    # TODO: fix this
-    # images.sort(key=lambda x: int(x.name[:-4]))
-    images.sort(key=lambda x: int(x.name[3:-4]))
-    # names = np.array(list(map(lambda x: x.name, images)))
-    names = np.array(list(map(lambda x: f"{int(x.name[3:-4]):04}.png", images)))
+    images.sort(key=lambda x: int(x.name[:-4]))
+    names = np.array(list(map(lambda x: x.name, images)))
     tvecs = np.array(list(map(lambda x: x.tvec, images)))
     qvecs = np.array(list(map(lambda x: x.qvec, images)))
     xyz_positions = []
