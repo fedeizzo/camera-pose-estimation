@@ -8,7 +8,6 @@ from typing import Dict
 from criterions.criterions import MapNetCriterion
 
 
-
 def train_model(
     model: torch.nn.Module,
     dataloaders: Dict[str, DataLoader],
@@ -53,7 +52,7 @@ def train_model(
                 aim_run.track(
                     epoch_loss, name="loss", epoch=epoch, context={"subset": phase}
                 )
-                aim_run.track(scheduler.get_lr(), name="lr", epoch=epoch)
+                aim_run.track(scheduler.get_last_lr(), name="lr", epoch=epoch)
 
                 if isinstance(criterion, MapNetCriterion):
                     aim_run.track(criterion.sax, name="sax", epoch=epoch)
