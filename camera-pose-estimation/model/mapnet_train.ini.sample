@@ -14,8 +14,11 @@ num_workers = 4
 batch_size = 16
 step = 3
 skip = 10
-sequences = {"train": "seq-01", "validation": "seq-02"}
 color_jitter = 0.5
+; required only with dataset built with colmap
+save_processed_dataset = true
+; required only with 7scenes dataset
+sequences = {"train": "seq-01", "validation": "seq-02"}
 
 [loss]
 type = "mapnet_criterion"
@@ -38,6 +41,7 @@ gamma = 0.1
 train_dataset = "/data/train"
 validation_dataset = "/data/validation"
 test_dataset = "/data/test"
-images = "/data/images"
 net_weights_dir = "/data/model_weights"
 aim_dir = "/data/model_weights"
+; required only with dataset built with colmap
+images = "/data/images"

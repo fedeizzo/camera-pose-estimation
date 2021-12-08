@@ -62,9 +62,7 @@ def get_device() -> torch.device:
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(
-    config_model, device: torch.device
-) -> Tuple[torch.nn.Module, Dataset]:
+def get_model(config_model, device: torch.device) -> Tuple[torch.nn.Module, Dataset]:
     if config_model["name"] == "posenet":
         model = get_posenet(config_model["outputs"]).to(device)
         dataset_type = AbsolutePoseDataset
@@ -101,7 +99,9 @@ def get_dataloader(
             color_jitter=config_dataloader["color_jitter"],
             seq=seq,
             image_path=config_paths.get("images"),
-            device=device,
+            save_processed_dataset=config_dataloader.get(
+                "save_processed_dataset", None
+            ),
         )
     elif (
         dataset_type == MapNetDataset
@@ -112,11 +112,11 @@ def get_dataloader(
             dataset_path=dataset_path,
             seq=config_dataloader["sequences"][phase],
         )
-    elif dataset_type == MapNetDataset and phase == "test":
+    elif dataset_type == MapNetDataset and phase == "test" and "images" in config_paths:
         dataset = AbsolutePoseDataset(
-            dataset_path=dataset_path,
-            image_folder=config_paths.get("images"),
-            device=device,
+            dataset_path=PosixPath(dataset_path),
+            image_folder=PosixPath(config_paths["images"]),
+            save_processed_dataset=config_paths.get("save_processed_dataset", False),
         )
     else:
         dataset = dataset_type(
@@ -204,15 +204,15 @@ def train(config_path: str):
     aim_run = Run(
         repo=config["paths"]["aim_dir"],
         experiment=config["environment"]["experiment_name"],
-        run_hash=config["environment"]["run_name"],
+        # run_hash=config["environment"]["run_name"],
     )
     aim_run[...] = config.get_config()
-    save_config_ro(
-        config_path,
-        os.path.join(
-            experiment_dir, config["environment"]["run_name"] + "_config.ini"
-        ),
-    )
+    # save_config_ro(
+    #     config_path,
+    #     os.path.join(
+    #         experiment_dir, config["environment"]["run_name"] + "_config.ini"
+    #     ),
+    # )
 
     train_dataset_path = config["paths"]["train_dataset"]
     validation_dataset_path = config["paths"]["validation_dataset"]
@@ -273,9 +273,7 @@ def test(config_path: str):
         config["environment"]["experiment_name"],
     )
     train_configs = ConfigParser(
-        os.path.join(
-            experiment_dir, config["environment"]["run_name"] + "_config.ini"
-        )
+        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini")
     )
     set_random_seed(train_configs["environment"]["seed"])
 
@@ -307,28 +305,6 @@ def test(config_path: str):
     targets.to_csv(config["paths"]["targets"], index=False)
     predictions.to_csv(config["paths"]["predictions"], index=False)
 
-    # quaternion_scaler_path = config["paths"]["quaternion_scaler"]
-    # translation_scaler_path = config["paths"]["translation_scaler"]
-
-    # with open(quaternion_scaler_path, "rb") as f:
-    #     quaternion_scaler = pickle.load(f)
-    # with open(translation_scaler_path, "rimgb") as f:
-    #     translation_scaler = pickle.load(f)
-
-    # predictions = reverse_normalization(
-    #     predictions, quaternion_scaler, translation_scaler
-    # )
-    # predictions.loc[-1] = targets.iloc[0][["tx", "ty", "tz", "qx", "qy", "qz", "qw"]]
-    # predictions.index = predictions.index + 1
-    # predictions.sort_index(inplace=True)
-    # targets = reverse_normalization(targets, quaternion_scaler, translation_scaler)
-    # targets = targets[["x", "y", "z"]]
-    # predictions = from_relative_to_absolute_pose(predictions)
-    # positions = compute_absolute_positions(predictions)
-    # import pdb
-
-    # pdb.set_trace()
-
 
 def inference(config_path="./inference.ini", image: Image = None):
     config = ConfigParser(config_path)
@@ -338,9 +314,7 @@ def inference(config_path="./inference.ini", image: Image = None):
         config["environment"]["experiment_name"],
     )
     train_configs = ConfigParser(
-        os.path.join(
-            experiment_dir, config["environment"]["run_name"] + "_config.ini"
-        )
+        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini")
     )
     set_random_seed(train_configs["environment"]["seed"])
 
@@ -365,18 +339,12 @@ def inference(config_path="./inference.ini", image: Image = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Base model")
-    parser.add_argument(
-        "-c", "--config", type=str, required=True, help="Config file"
-    )
-    parser.add_argument(
-        "-t", "--train", action="store_true", help="Train model flag"
-    )
+    parser.add_argument("-c", "--config", type=str, required=True, help="Config file")
+    parser.add_argument("-t", "--train", action="store_true", help="Train model flag")
     parser.add_argument(
         "-i", "--inference", action="store_true", help="Inference model flag"
     )
-    parser.add_argument(
-        "-e", "--test", action="store_true", help="Test model flag"
-    )
+    parser.add_argument("-e", "--test", action="store_true", help="Test model flag")
 
     args = parser.parse_args()
     config_path = args.config

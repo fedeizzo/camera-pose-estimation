@@ -3,6 +3,7 @@ experiment_name = "mapnet"
 run_name = "run_name"
 
 [dataloader]
+; required only with 7scenes dateset
 sequences = {"test": "seq-02"}
 
 [paths]
@@ -10,3 +11,8 @@ net_weights_dir = "path"
 dataset = "path"
 targets = "path"
 predictions = "path"
+; required only with dataset built with colmap
+images = "/data/images"
+; only required with dataset generated with colmap.
+; possible option false and true
+save_processed_dataset = true
