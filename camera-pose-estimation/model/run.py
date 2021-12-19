@@ -204,15 +204,15 @@ def train(config_path: str):
     aim_run = Run(
         repo=config["paths"]["aim_dir"],
         experiment=config["environment"]["experiment_name"],
-        # run_hash=config["environment"]["run_name"],
+        run_hash=config["environment"]["run_name"],
     )
     aim_run[...] = config.get_config()
-    # save_config_ro(
-    #     config_path,
-    #     os.path.join(
-    #         experiment_dir, config["environment"]["run_name"] + "_config.ini"
-    #     ),
-    # )
+    save_config_ro(
+        config_path,
+        os.path.join(
+            experiment_dir, config["environment"]["run_name"] + "_config.ini"
+        ),
+    )
 
     train_dataset_path = config["paths"]["train_dataset"]
     validation_dataset_path = config["paths"]["validation_dataset"]
@@ -323,6 +323,7 @@ def inference(config_path="./inference.ini", image: Image = None):
         experiment_dir,
         config["environment"]["run_name"] + ".pth",
     )
+    print(device)
     model.load_state_dict(torch.load(weights_path))
     model = model.to(get_device())
 

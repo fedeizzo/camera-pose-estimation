@@ -4,47 +4,64 @@
         <title>Camera pose estimation</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     </head>
     <body>
-        <div class="wrapper">
-            <div class="drop-zone">
-                <span class="drop-zone__prompt">Drop file here or click to upload</span>
-                <input type="file" name="img" id="img_input" class="drop-zone__input">
+        <div class="horizontalContainer">
+            <div class="verticalContainer">
+                <div class="drop-zone">
+                    <span class="drop-zone__prompt">Drop file here or click to upload</span>
+                    <input type="file" name="img" id="img_input" class="drop-zone__input">
+                </div>
+                <div class="dropdown">
+                    <button id="submitButton" class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                        Submit
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                        <li class="dropdown-item" onclick="getMap()">Map</li>
+                        <li class="dropdown-item" onclick="getWalkableMap()">Walkable map</li>
+                        <li class="dropdown-item" onclick="getPositions()">Positions</li>
+                    </ul>
+                </div>
             </div>
-            <button class="button btnFade btnBlueGreen" onclick="getMap()">Submit</button>
-            <div class="loader" id="loading" hidden></div>
+            <img id="map"><img>
         </div>
-        <img id="map"><img>
+        <div class="loader" id="loading" hidden></div>
         <style>
-        .wrapper {
-          width: 300px;
-          height: 100vh;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
+        .horizontalContainer {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+        .verticalContainer {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: nowrap;
+            justify-content: center;
+            height: 100vh;
         }
         .drop-zone {
-          height: 200px;
-          width: 200px;
-          text-align: center;
-          font-family: "Quicksand", sans-serif;
-          font-weight: 500;
-          font-size: 20px;
-          cursor: pointer;
-          color: #cccccc;
-          border: 4px dashed #009578;
-          border-radius: 10px;
+            padding: 8px;
+            margin: 8px;
+            height: 200px;
+            width: 200px;
+            text-align: center;
+            font-family: "Quicksand", sans-serif;
+            font-weight: 500;
+            font-size: 20px;
+            cursor: pointer;
+            color: #cccccc;
+            border: 4px dashed #009578;
+            border-radius: 10px;
         }
-
         .drop-zone--over {
           border-style: solid;
         }
-
         .drop-zone__input {
           display: none;
         }
-
         .drop-zone__thumb {
           width: 100%;
           height: 100%;
@@ -67,39 +84,31 @@
           font-size: 14px;
           text-align: center;
         }
-        .btnBlueGreen {
-          background: #009578;
+        #submitButton {
+            background-color: #009578;
+            border-color: #009578;
+            margin: 8px;
+            width: 200px;
         }
-        .btnFade.btnBlueGreen:hover {
-          background: #21825B;
-        }
-        .button {
-          display: block;
-          border: 0;
-          text-align: center;
-          float: left;
-          width: 120px;
-          padding: 0;
-          margin: 10px 20px 10px 0;
-          font-weight: 600;
-          text-align: center;
-          line-height: 50px;
-          color: #FFF;
-          border-radius: 5px;
-          transition: all 0.2s ;
+        #selector {
+            margin: 8px;
         }
         .loader {
-          border: 16px solid #f3f3f3; /* Light grey */
-          border-top: 16px solid #3498db; /* Blue */
-          border-radius: 50%;
-          width: 120px;
-          height: 120px;
-          animation: spin 2s linear infinite;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 16px solid #f3f3f3;
+            border-top: 16px solid #009578;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
         }
 
         @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         </style>
         <script>
@@ -177,8 +186,51 @@
                 request.open("POST", "visual_pose");
                 // request.responseType = "arraybuffer";
                 request.onreadystatechange = function() {
-                    if(this.readyState === 4 && this.status === 200) {
+                    if (this.readyState === 4)
                         document.getElementById("loading").hidden = true;
+                    if(this.readyState === 4 && this.status === 200) {
+                        console.log(this.response);
+                        document.getElementById("map").src = `data:image/jpeg;base64,${btoa(this.response)}`;
+                    }
+                };
+                
+                var img_input = document.getElementById("img_input");
+                var file = img_input.files[0]
+                var formdata = new FormData();
+                formdata.append('img', file);
+
+                document.getElementById("loading").hidden = false;
+                request.send(formdata);
+            }
+            function getWalkableMap() {
+                var request = new XMLHttpRequest();
+                request.open("POST", "visual_pose");
+                // request.responseType = "arraybuffer";
+                request.onreadystatechange = function() {
+                    if (this.readyState === 4)
+                        document.getElementById("loading").hidden = true;
+                    if(this.readyState === 4 && this.status === 200) {
+                        console.log(this.response);
+                        document.getElementById("map").src = `data:image/jpeg;base64,${btoa(this.response)}`;
+                    }
+                };
+                
+                var img_input = document.getElementById("img_input");
+                var file = img_input.files[0]
+                var formdata = new FormData();
+                formdata.append('img', file);
+
+                document.getElementById("loading").hidden = false;
+                request.send(formdata);
+            }
+            function getPositions() {
+                var request = new XMLHttpRequest();
+                request.open("POST", "visual_pose");
+                // request.responseType = "arraybuffer";
+                request.onreadystatechange = function() {
+                    if (this.readyState === 4)
+                        document.getElementById("loading").hidden = true;
+                    if(this.readyState === 4 && this.status === 200) {
                         console.log(this.response);
                         document.getElementById("map").src = `data:image/jpeg;base64,${btoa(this.response)}`;
                     }
