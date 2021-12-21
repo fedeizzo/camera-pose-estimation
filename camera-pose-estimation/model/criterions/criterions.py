@@ -91,8 +91,8 @@ class MapNetCriterion(nn.Module):
     def __init__(
         self,
         device: torch.device,
-        t_loss_fn=nn.L1Loss(),
-        q_loss_fn=nn.L1Loss(),
+        t_loss_fn=nn.SmoothL1Loss(),
+        q_loss_fn=nn.SmoothL1Loss(),
         sax=0.0,
         saq=0.0,
         srx=0,

@@ -13,10 +13,19 @@ class PoseNet(nn.Module):
         self.dropout_rate = dropout_rate
 
         out_feature_extractor = self.feature_extractor.fc.in_features
-        self.feature_extractor.fc = nn.Linear(out_feature_extractor, feature_dimension)
+        # self.feature_extractor.fc = nn.Linear(out_feature_extractor, feature_dimension)
+        self.feature_extractor.fc = nn.Sequential(
+            nn.Linear(out_feature_extractor, feature_dimension),
+            nn.ReLU(),
+            # nn.Linear(feature_dimension, feature_dimension),
+            # nn.ReLU(),
+            nn.Linear(feature_dimension, feature_dimension // 2),
+            nn.ReLU(),
+            nn.Linear(feature_dimension // 2, feature_dimension // 4),
+        )
 
-        self.xyz_encoder = nn.Linear(feature_dimension, 3)
-        self.wxyz_encoder = nn.Linear(feature_dimension, 4)
+        self.xyz_encoder = nn.Linear(feature_dimension // 4, 3)
+        self.wxyz_encoder = nn.Linear(feature_dimension // 4, 4)
 
         init_modules = [
             self.feature_extractor.fc,
