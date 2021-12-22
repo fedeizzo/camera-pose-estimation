@@ -1,5 +1,5 @@
 \section{Introduction}
-The camera pose can be expressed through two component:
+The camera pose can be expressed through two components:
 \begin{enumerate}
     \item a tuple of three elements that identifies the coordinates $x,y\text{ and }z$
     \begin{equation}
@@ -15,17 +15,16 @@ The camera pose can be expressed through two component:
 \end{enumerate}
 Consequentially the pose is referred as $p_c=(x_c, q_c)$. It is important to notice that this is not the only available representation of a pose.
 
-Given an image $I_c$ captured by a camera $C$, an absolute pose estimator $E$ tries to predict the $3D$ pose orientation and location of $C$ in world coordinates, defined for some arbitrary reference $3D$ model. The \textit{absolute pose estimation (APE)} problem can be formally defined as the problem of estimating a function $E$ taking an image $I_c$ caputered by a camera $C$ and outputting its respective pose:
+Given an image $I_c$ captured by a camera $C$, an absolute pose estimator $E$ tries to predict the $3D$ pose orientation and location of $C$ in world coordinates, defined for some arbitrary reference $3D$ model. The \textit{absolute pose estimation (APE)} problem can be formally defined as the problem of estimating a function $E$ taking an image $I_c$ captured by a camera $C$ and outputting its respective pose:
 \begin{equation}
     E(I_c) = (x_c, q_c)
     \label{eq:absolute-pose-estimation-task}
 \end{equation}
 
-Another problem related to APE is \textit{relative pose estimation (RPE)}, in this kind of task the estimator takes two image $I_c^1$ and $I_c^2$ captured by $C$ and aims to predict the relative pose between them. The \cref{eq:absolute-pose-estimation-task} becomes:
+Another problem related to APE is \textit{relative pose estimation (RPE)}, in this kind of task the estimator takes two images $I_c^1$ and $I_c^2$ captured by $C$ and aims to predict the relative pose between them. The \cref{eq:absolute-pose-estimation-task} becomes:
 
 \begin{equation}
     E(I_c^1, I_c^2) = (x_c^{rel^2}, q_c^{rel})
     \label{eq:relative-pose-estimation-task}
 \end{equation}
-
 where $x_c^{rel}$ can be the absolute pose with \textit{coordinates reference system} in $I_c^1$ or a translation vector from $I_c^1$ to $I_C^2$.
