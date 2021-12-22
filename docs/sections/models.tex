@@ -1,1 +1,19 @@
 \section{Models}
+In this work we took in consideration some models used in the state of the art, also adding some small modifications to make them fit better to our use case.
+In particular, we focused on:
+\begin{itemize}
+    \item Menet for RPE;
+    \item PoseNet and MapNet for APE.
+\end{itemize}
+
+\subsection{Menet}
+\dots
+
+\subsection{PoseNet}
+The network is based on the ResNet architecture (reference)
+\dots
+
+\subsection{MapNet}
+The MapNet model for APE represents an evolution of the PoseNet model: in fact, the model architecture remains actually the same. On the contrary, the main difference between the PoseNet is the loss function used to train the model. In this case, the errors in the prediction of absolute poses are not the only ones which are penalized: also errors in the relative poses are taken in consideration.
+
+The size of the last linear block depends on the dimension of the map that we would like to introduce.
