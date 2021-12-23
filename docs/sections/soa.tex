@@ -1,1 +1,12 @@
 \section{State of art}
+The Deep Learning approaches used during the time to accomplish APE and RPE were many. The first attempt is PoseNet (link al paper), it was made using the \textit{transfered learning}. The starting network for the knowledge transfer was a GoogLeNet(link al paper) where softmax classification is replaced with a sequence of fully connected layers. The idea was to extract features thanks to the pratrained model and then use them to estimate the pose. The results were good but there was not capability of generalization on unseen scenes.
+
+In order to solve the problem other techniques were used, they can be classified into:
+\begin{itemize}
+    \item \textit{end-to-end} approaches;
+    \item \textit{hybrid} approaches.
+\end{itemize}
+
+End-to-end models tested were updates of the original PoseNet that involve \textit{encoder/decoder blocks, linear layers, LSTM blocks}. The most successful model on this category is MapNet and related variants MapNet+ and MapNet+PGO (link al paper).
+
+Hybrid approaches instead tried to focust on diffirent support tasks with the goal of helping the final pose prediction. Those techniques relied on unsupervised learning, 3D objects reconstruction and other data extracted with external tools. For this reason those methods are under the scope of this document.

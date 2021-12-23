@@ -7,7 +7,21 @@ In particular, we focused on:
 \end{itemize}
 
 \subsection{Menet}
-\dots
+MeNet is a model used for RPE. \Cref{fig:menet-structure} represents the structure of the model. The input of the network is a stack of two images, the goal of the model is to estimate the pose of the second image given the reference system fixed on the first one. The final prediction can be composed by 6 or 7 elements, this depends on the representation used for the rotation of the camera.
+\begin{figure}
+    \begin{center}
+        \includegraphics[width=0.32\textwidth]{./imgs/menet_structure.png}
+    \end{center}
+    \caption{MeNet structure}
+    \label{fig:menet-structure}
+\end{figure}
+
+The loss function used is a composition of two Mean Square Errors (MSE) computed separately on the position and rotation. Then they are combined weighting them:
+\begin{equation}
+    Loss(w) = \frac{1}{N} \sum\limits_{i=1}^N \norm{P^i - \hat{P}^i}^2_2 + \alpha\norm{Q^i - \hat{Q}^i}^2_2
+    \label{eq:menet-loss}
+\end{equation}
+where the $P$ is the translation, $Q$ the rotation and $\alpha$ the weight for balancing the displacement error and the rotation angle error.
 
 \subsection{PoseNet}
 The network is based on the ResNet architecture (reference)
