@@ -25,7 +25,9 @@
                     </ul>
                 </div>
             </div>
-            <img id="map"><img>
+            <div class="verticalContainer">
+                <img id="map"><img>
+            </div>
         </div>
         <div class="loader" id="loading" hidden></div>
         <style>
@@ -184,13 +186,12 @@
             function getMap() {
                 var request = new XMLHttpRequest();
                 request.open("POST", "visual_pose");
-                // request.responseType = "arraybuffer";
                 request.onreadystatechange = function() {
-                    if (this.readyState === 4)
-                        document.getElementById("loading").hidden = true;
                     if(this.readyState === 4 && this.status === 200) {
-                        console.log(this.response);
-                        document.getElementById("map").src = `data:image/jpeg;base64,${btoa(this.response)}`;
+                        document.getElementById("loading").hidden = true;
+                        document.getElementById("map").src = `data:image/*;base64,${this.response}`;
+                        document.getElementById("map").style.width = "1160px";
+                        document.getElementById("map").style.height = "683px";
                     }
                 };
                 
@@ -204,14 +205,13 @@
             }
             function getWalkableMap() {
                 var request = new XMLHttpRequest();
-                request.open("POST", "visual_pose");
-                // request.responseType = "arraybuffer";
+                request.open("POST", "visual_walkable_pose");
                 request.onreadystatechange = function() {
-                    if (this.readyState === 4)
-                        document.getElementById("loading").hidden = true;
                     if(this.readyState === 4 && this.status === 200) {
-                        console.log(this.response);
-                        document.getElementById("map").src = `data:image/jpeg;base64,${btoa(this.response)}`;
+                        document.getElementById("loading").hidden = true;
+                        document.getElementById("map").src = `data:image/*;base64,${this.response}`;
+                        document.getElementById("map").style.width = "1160px";
+                        document.getElementById("map").style.height = "683px";
                     }
                 };
                 
@@ -225,14 +225,13 @@
             }
             function getPositions() {
                 var request = new XMLHttpRequest();
-                request.open("POST", "visual_pose");
+                request.open("POST", "numerical_pose");
                 // request.responseType = "arraybuffer";
                 request.onreadystatechange = function() {
                     if (this.readyState === 4)
                         document.getElementById("loading").hidden = true;
                     if(this.readyState === 4 && this.status === 200) {
-                        console.log(this.response);
-                        document.getElementById("map").src = `data:image/jpeg;base64,${btoa(this.response)}`;
+                        alert(this.response);
                     }
                 };
                 

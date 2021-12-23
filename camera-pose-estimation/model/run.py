@@ -62,7 +62,9 @@ def get_device() -> torch.device:
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(config_model, device: torch.device) -> Tuple[torch.nn.Module, Dataset]:
+def get_model(
+    config_model, device: torch.device
+) -> Tuple[torch.nn.Module, Dataset]:
     if config_model["name"] == "posenet":
         model = get_posenet(config_model["outputs"]).to(device)
         dataset_type = AbsolutePoseDataset
@@ -112,11 +114,17 @@ def get_dataloader(
             dataset_path=dataset_path,
             seq=config_dataloader["sequences"][phase],
         )
-    elif dataset_type == MapNetDataset and phase == "test" and "images" in config_paths:
+    elif (
+        dataset_type == MapNetDataset
+        and phase == "test"
+        and "images" in config_paths
+    ):
         dataset = AbsolutePoseDataset(
             dataset_path=PosixPath(dataset_path),
             image_folder=PosixPath(config_paths["images"]),
-            save_processed_dataset=config_paths.get("save_processed_dataset", False),
+            save_processed_dataset=config_paths.get(
+                "save_processed_dataset", False
+            ),
         )
     else:
         dataset = dataset_type(
@@ -273,7 +281,9 @@ def test(config_path: str):
         config["environment"]["experiment_name"],
     )
     train_configs = ConfigParser(
-        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini")
+        os.path.join(
+            experiment_dir, config["environment"]["run_name"] + "_config.ini"
+        )
     )
     set_random_seed(train_configs["environment"]["seed"])
 
@@ -314,7 +324,9 @@ def inference(config_path="./inference.ini", image: Image = None):
         config["environment"]["experiment_name"],
     )
     train_configs = ConfigParser(
-        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini")
+        os.path.join(
+            experiment_dir, config["environment"]["run_name"] + "_config.ini"
+        )
     )
     set_random_seed(train_configs["environment"]["seed"])
 
@@ -323,9 +335,15 @@ def inference(config_path="./inference.ini", image: Image = None):
         experiment_dir,
         config["environment"]["run_name"] + ".pth",
     )
-    print(device)
     model.load_state_dict(torch.load(weights_path))
     model = model.to(get_device())
+    model.eval()
+    torch.set_grad_enabled(False)
+
+    unit_measure = config["image_processing"]["unit_measure"]
+    pixels_amount = config["image_processing"]["pixels_amount"]
+    rotation_matrix = config["image_processing"]["rotation_matrix"]
+    translation_vector = config["image_processing"]["translation_vector"]
 
     if image is not None:
         transformers = get_image_transform()
@@ -333,19 +351,31 @@ def inference(config_path="./inference.ini", image: Image = None):
         prediction = model(img)
         prediction = prediction.squeeze(0).squeeze(0)
         del model
-        return prediction.detach().cpu().numpy()
+        return (
+            prediction.detach().cpu().numpy(),
+            unit_measure,
+            pixels_amount,
+            rotation_matrix,
+            translation_vector,
+        )
     else:
         raise NotImplementedError("Inference mode not yet implemented")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Base model")
-    parser.add_argument("-c", "--config", type=str, required=True, help="Config file")
-    parser.add_argument("-t", "--train", action="store_true", help="Train model flag")
+    parser.add_argument(
+        "-c", "--config", type=str, required=True, help="Config file"
+    )
+    parser.add_argument(
+        "-t", "--train", action="store_true", help="Train model flag"
+    )
     parser.add_argument(
         "-i", "--inference", action="store_true", help="Inference model flag"
     )
-    parser.add_argument("-e", "--test", action="store_true", help="Test model flag")
+    parser.add_argument(
+        "-e", "--test", action="store_true", help="Test model flag"
+    )
 
     args = parser.parse_args()
     config_path = args.config
