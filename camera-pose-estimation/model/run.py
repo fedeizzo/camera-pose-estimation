@@ -265,7 +265,7 @@ def train(config_path: str):
         config["environment"]["epochs"],
         aim_run,
         "cuda" if torch.cuda.is_available() else "cpu",
-    )
+    ).cpu()
     net_weights_path = os.path.join(
         experiment_dir,
         config["environment"]["run_name"] + ".pth",
