@@ -91,8 +91,8 @@ class MapNetCriterion(nn.Module):
     def __init__(
         self,
         device: torch.device,
-        t_loss_fn=nn.SmoothL1Loss(),
-        q_loss_fn=nn.SmoothL1Loss(),
+        t_loss_fn=nn.MSELoss(),
+        q_loss_fn=nn.MSELoss(),
         sax=0.0,
         saq=0.0,
         srx=0,
@@ -147,14 +147,15 @@ class MapNetCriterion(nn.Module):
         #     + self.saq
         # )
         abs_loss = (
+            torch.sqrt(
             self.t_loss_fn(
                 pred.view(-1, *size[2:])[:, :3],
                 targ.view(-1, *size[2:])[:, :3],
-            )
-            + self.q_loss_fn(
+            ))
+            + torch.sqrt(self.q_loss_fn(
                 pred.view(-1, *size[2:])[:, 3:],
                 targ.view(-1, *size[2:])[:, 3:],
-            )
+            ))
         )
 
         # get the VOs
@@ -178,14 +179,14 @@ class MapNetCriterion(nn.Module):
         #     + self.srq
         # )
         vo_loss = (
-            self.t_loss_fn(
+            torch.sqrt(self.t_loss_fn(
                 pred_vos.view(-1, *size[2:])[:, :3],
                 targ_vos.view(-1, *size[2:])[:, :3],
-            )
-            + self.q_loss_fn(
+            ))
+            + torch.sqrt(self.q_loss_fn(
                 pred_vos.view(-1, *size[2:])[:, 3:],
                 targ_vos.view(-1, *size[2:])[:, 3:],
-            )
+            ))
         )
 
         # total loss
