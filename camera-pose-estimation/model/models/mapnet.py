@@ -13,6 +13,10 @@ class PoseNet(nn.Module):
         self.dropout_rate = dropout_rate
 
         out_feature_extractor = self.feature_extractor.fc.in_features
+
+        for param in self.feature_extractor.parameters():
+            param.requires_grad = False
+
         # self.feature_extractor.fc = nn.Linear(out_feature_extractor, feature_dimension)
         self.feature_extractor.fc = nn.Sequential(
             nn.Linear(out_feature_extractor, feature_dimension),

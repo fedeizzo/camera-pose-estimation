@@ -242,9 +242,9 @@ def train(config_path: str):
         optimizer = get_optimizer(config["optimizer"], param_list)
     else:
         optimizer = get_optimizer(config["optimizer"], model.parameters())
-    # summary(
-    #     model, (batch_size, *dataloaders["train"].dataset[0][0].size()),
-    # )
+    summary(
+        model, (config["dataloader"]["batch_size"], *dataloaders["train"].dataset[0][0].size()),
+    )
     scheduler = get_scheduler(config["scheduler"], optimizer)
 
     trained_model = train_model(

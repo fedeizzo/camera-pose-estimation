@@ -60,7 +60,7 @@ def train_model(
                     aim_run.track(criterion.srx, name="srx", epoch=epoch)
                     aim_run.track(criterion.srq, name="srq", epoch=epoch)
 
-                if phase == "val" and abs(epoch_loss) <= abs(best_loss):
+                if phase == "validation" and abs(epoch_loss) <= abs(best_loss):
                     best_model = model
                     best_loss = epoch_loss
             pbar.set_postfix(phases_loss)
