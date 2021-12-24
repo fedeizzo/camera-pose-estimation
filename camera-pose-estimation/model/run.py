@@ -29,6 +29,7 @@ from test_model import (
     from_relative_to_absolute_pose,
     compute_absolute_positions,
 )
+from utils.metrics import calculate_MAE_poses
 from aim import Run
 from torchinfo import summary
 from pathlib import PosixPath
@@ -62,9 +63,7 @@ def get_device() -> torch.device:
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(
-    config_model, device: torch.device
-) -> Tuple[torch.nn.Module, Dataset]:
+def get_model(config_model, device: torch.device) -> Tuple[torch.nn.Module, Dataset]:
     if config_model["name"] == "posenet":
         model = get_posenet(config_model["outputs"]).to(device)
         dataset_type = AbsolutePoseDataset
@@ -114,17 +113,11 @@ def get_dataloader(
             dataset_path=dataset_path,
             seq=config_dataloader["sequences"][phase],
         )
-    elif (
-        dataset_type == MapNetDataset
-        and phase == "test"
-        and "images" in config_paths
-    ):
+    elif dataset_type == MapNetDataset and phase == "test" and "images" in config_paths:
         dataset = AbsolutePoseDataset(
             dataset_path=PosixPath(dataset_path),
             image_folder=PosixPath(config_paths["images"]),
-            save_processed_dataset=config_paths.get(
-                "save_processed_dataset", False
-            ),
+            save_processed_dataset=config_paths.get("save_processed_dataset", False),
         )
     else:
         dataset = dataset_type(
@@ -217,9 +210,7 @@ def train(config_path: str):
     aim_run[...] = config.get_config()
     save_config_ro(
         config_path,
-        os.path.join(
-            experiment_dir, config["environment"]["run_name"] + "_config.ini"
-        ),
+        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini"),
     )
 
     train_dataset_path = config["paths"]["train_dataset"]
@@ -281,9 +272,7 @@ def test(config_path: str):
         config["environment"]["experiment_name"],
     )
     train_configs = ConfigParser(
-        os.path.join(
-            experiment_dir, config["environment"]["run_name"] + "_config.ini"
-        )
+        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini")
     )
     set_random_seed(train_configs["environment"]["seed"])
 
@@ -315,6 +304,10 @@ def test(config_path: str):
     targets.to_csv(config["paths"]["targets"], index=False)
     predictions.to_csv(config["paths"]["predictions"], index=False)
 
+    mae_xyz, mae_wxyz = calculate_MAE_poses(targets, predictions)
+    print(f"MAE XYZ: {mae_xyz}")
+    print(f"MAE WXYZ: {mae_wxyz}")
+
 
 def inference(config_path="./inference.ini", image: Image = None):
     config = ConfigParser(config_path)
@@ -324,9 +317,7 @@ def inference(config_path="./inference.ini", image: Image = None):
         config["environment"]["experiment_name"],
     )
     train_configs = ConfigParser(
-        os.path.join(
-            experiment_dir, config["environment"]["run_name"] + "_config.ini"
-        )
+        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini")
     )
     set_random_seed(train_configs["environment"]["seed"])
 
@@ -364,18 +355,12 @@ def inference(config_path="./inference.ini", image: Image = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Base model")
-    parser.add_argument(
-        "-c", "--config", type=str, required=True, help="Config file"
-    )
-    parser.add_argument(
-        "-t", "--train", action="store_true", help="Train model flag"
-    )
+    parser.add_argument("-c", "--config", type=str, required=True, help="Config file")
+    parser.add_argument("-t", "--train", action="store_true", help="Train model flag")
     parser.add_argument(
         "-i", "--inference", action="store_true", help="Inference model flag"
     )
-    parser.add_argument(
-        "-e", "--test", action="store_true", help="Test model flag"
-    )
+    parser.add_argument("-e", "--test", action="store_true", help="Test model flag")
 
     args = parser.parse_args()
     config_path = args.config
