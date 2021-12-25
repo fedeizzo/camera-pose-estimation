@@ -1,6 +1,28 @@
 \section{Results}
 \subsection{Posenet}
-\subsection{Mapnet}
+\subsection{MapNet}
+Several pretrained models can be used as features extractor in the MapNet structure. In \cref{tab:mapnet-backends} are presented the most powerful ones for features extraction tested on the same final linear encoder. The overall trend is similar, this highlights that the extracted features are enough for the task independently from the backbone used.
+\begin{table}[htbp]
+\caption{MapNet backend comparison}
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\textbf{Model}&\textbf{Position err.}&\textbf{Rotation err.}&\textbf{Params}&\textbf{Tr.$^{\mathrm{a}}$ params} \\
+\hline
+ResNet-18       &0.202&0.0658&14,853,703&3,677,191 \\
+ResNet-34       &0.187&0.0757&24,961,863&3,677,191 \\
+ResNet-50       &0.220&0.0969&30,330,951&6,822,919 \\
+ResNet-152      &0.233&0.0869&64,966,727&3,677,191 \\
+EfficientNet-B7 &0.210&0.0848&71,658,455&7,871,495 \\
+\hline
+\multicolumn{4}{l}{$^{\mathrm{a}}$Trainable}
+\end{tabular}
+\label{tab:mapnet-backends}
+\end{center}
+\end{table}
+
+Another point that emerges is the importance of the final encoder, it works in a similar way of the \textit{bag of words} used by structure from motion (link al paper). Extracted features are mapped in a space that is used later as a comparison tool for new images for which the pose is asked.
+
 \subsection{Comparison}
 \subsection{Dashboard}
 A dashboard was developed with the aim to easily allow users to interact with model inference through a webserver. In \cref{fig:dashboard} is presented the \textit{UI} where red zones are not walkable areas.
