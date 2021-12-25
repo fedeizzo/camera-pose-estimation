@@ -1,5 +1,25 @@
 \section{Results}
 \subsection{Posenet}
+Several pretrained models can be used as features extractor in the PoseNet structure. In \cref{tab:mapnet-backends} are presented the most powerful ones for features extraction tested on the same final linear encoder. The overall trend is similar, this highlights that the extracted features are enough for the task independently from the backbone used.
+\begin{table}[htbp]
+\caption{PoseNet backend comparison}
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\textbf{Model}&\textbf{Position err.}&\textbf{Rotation err.}&\textbf{Params}&\textbf{Tr.$^{\mathrm{a}}$ params} \\
+\hline
+GoogleLeNet     &0.781&0.119&-         &-      \\
+ResNet-18       &0.635&0.288&11,180,103&3,591  \\
+ResNet-34       &0.632&0.223&21,288,263&3,591  \\
+ResNet-50       &0.707&0.191&23,522,375&14,343 \\
+ResNet-152      &0.594&0.139&58,158,151&14,343 \\
+EfficientNet-B7 &0.817&0.132&63,804,887&17,927 \\
+\hline
+\multicolumn{4}{l}{$^{\mathrm{a}}$Trainable}
+\end{tabular}
+\label{tab:posenet-backends}
+\end{center}
+\end{table}
 \subsection{MapNet}
 Several pretrained models can be used as features extractor in the MapNet structure. In \cref{tab:mapnet-backends} are presented the most powerful ones for features extraction tested on the same final linear encoder. The overall trend is similar, this highlights that the extracted features are enough for the task independently from the backbone used.
 \begin{table}[htbp]
@@ -22,6 +42,7 @@ EfficientNet-B7 &0.210&0.0848&71,658,455&7,871,495 \\
 \end{table}
 
 Another point that emerges is the importance of the final encoder, it works in a similar way of the \textit{bag of words} used by structure from motion (link al paper). Extracted features are mapped in a space that is used later as a comparison tool for new images for which the pose is asked.
+For this reason the final encoder was modified from the original one (link al paper) in order to increase the latent space in which data can be stored.
 
 \subsection{Comparison}
 \subsection{Dashboard}
