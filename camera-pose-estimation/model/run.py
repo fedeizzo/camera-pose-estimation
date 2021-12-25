@@ -121,10 +121,9 @@ def get_dataloader(
         )
     else:
         dataset = dataset_type(
-            dataset_path,
-            config_paths["images"],
-            device,
-            is_train=phase == "train",
+            dataset_path=PosixPath(dataset_path),
+            image_folder=PosixPath(config_paths["images"]),
+            save_processed_dataset=config_paths.get("save_processed_dataset", False),
         )
 
     return DataLoader(
@@ -231,7 +230,7 @@ def train(config_path: str):
 
     # only parameters of final layer are being optimized
     if config["model"]["name"] == "posenet":
-        optimizer = get_optimizer(config["optimizer"], model.fc.parameters())
+        optimizer = get_optimizer(config["optimizer"], model.parameters())
     elif config["model"]["name"] == "mapnet":
         param_list = list(model.parameters())
         if criterion.learn_beta:

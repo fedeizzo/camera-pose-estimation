@@ -27,6 +27,8 @@ def dense_custom_loss(
 def get_loss(config_loss: dict, device: torch.device):
     if config_loss["type"] == "mse":
         criterion = torch.nn.MSELoss()
+    if config_loss["type"] == "SmoothL1Loss":
+        criterion = torch.nn.SmoothL1Loss()
     elif config_loss["type"] == "dense_custom":
         criterion = dense_custom_loss(alpha=config_loss["alpha"])
     elif config_loss["type"] == "weighted":

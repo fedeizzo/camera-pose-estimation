@@ -5,6 +5,7 @@ import numpy as np
 
 from torch.utils.data import DataLoader
 from datasets.absolute import qexp_map
+from models.mapnet import MapNet
 from typing import Tuple
 
 
@@ -51,7 +52,10 @@ def test_model(
     predictions = []
     targets = []
     for x, y in dataloaders:
-        x = torch.unsqueeze(x, dim=1).to(device=device)
+        if isinstance(model, MapNet):
+            x = torch.unsqueeze(x, dim=1).to(device=device)
+        else:
+            x = x.to(device=device)
         predictions.append(model(x))
         targets.append(y)
 
