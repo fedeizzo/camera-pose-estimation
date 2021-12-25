@@ -29,11 +29,15 @@ francesco.bozzo@studenti.unitn.it}
 \maketitle
 
 \begin{abstract}
-Camera pose estimation aims to find the absolute position of the camera within a given frame of a video. The estimation can be use in many ways, from object identification inside a known environment, to feature extraction combined with pose for 3D reconstruction. 
+The task of camera pose estimation aims to find the position of the camera in an image within a given environment.
+While different geometric approaches have already been studied in the literature, the aim of this project is to study the performances of deep learning models for the camera pose estimation problem.
+In this work, we analyze models for both relative camera pose estimation (MeNet) and absolute camera pose estimation (PoseNet, MapNet). Moreover, we propose a pipeline for the generation of a ground truth dataset based on structure from motion techniques (COLMAP).
+Finally, we show how the proposed framework has been used to build a dataset of the second floor of the Povo 1 building in the University of Trento, train an absolute pose estimation model with PyTorch, and deploy it through a web dashboard using FastAPI.
+The deep learning approach could give interesting results in combination with geometric methods, especially for: relocation after lost tracking, closed-loop detection, better dealing with moving objects in the scene.
 \end{abstract}
 
 \begin{IEEEkeywords}
-component, formatting, style, styling, insert
+camera pose estimation, COLMAP, deep learning, vision
 \end{IEEEkeywords}
 
 \input{sections/introduction}

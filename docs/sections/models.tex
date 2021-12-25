@@ -1,5 +1,5 @@
 \section{Models}
-In this work we took in consideration some models used in the state of the art, also adding some small modifications to make them fit better to our use case.
+In this work we took in consideration some models used in the state of the art, also adding  small modifications to make them fit better to our use case scenario.
 In particular, we focused on:
 \begin{itemize}
     \item Menet for RPE;
@@ -7,12 +7,13 @@ In particular, we focused on:
 \end{itemize}
 
 \subsection{Menet}
-MeNet is a model used for RPE. \Cref{fig:menet-structure} represents the structure of the model. The input of the network is a stack of two images, the goal of the model is to estimate the pose of the second image given the reference system fixed on the first one. The final prediction can be composed by 6 or 7 elements, this depends on the representation used for the rotation of the camera.
+The first model we would like to analyze is the MeNet model (\cref{fig:menet-structure}), which is specifically targeted for RPE.
+The input of the network consists in a stack of two images: the goal is to estimate the relative pose of the second image with respect to the first one.
 \begin{figure}
     \begin{center}
         \includegraphics[width=0.32\textwidth]{./imgs/menet_structure.png}
     \end{center}
-    \caption{MeNet structure}
+    \caption{The architecture of the MeNet model.}
     \label{fig:menet-structure}
 \end{figure}
 
