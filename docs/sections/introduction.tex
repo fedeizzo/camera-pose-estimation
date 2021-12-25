@@ -23,6 +23,15 @@ Given an image $I_c$ captured by a camera $C$, an absolute pose estimator $E$ tr
     \label{eq:absolute-pose-estimation-task}
 \end{equation}
 
+\begin{figure}[h]
+    \begin{center}
+        \includegraphics[width=0.48\textwidth]{./imgs/introduction_example.png}
+    \end{center}
+    \caption{APE model developed}
+    \label{fig:introduction-example}
+\end{figure}
+
+
 Apart from APE, a popular task is also \emph{relative pose estimation (RPE)}. In this kind of approach the estimator takes two images $I_c^1$ and $I_c^2$ captured by $C$ and aims to predict the relative pose between them. In this case, the formulation of the function $E$ described in \cref{eq:absolute-pose-estimation-task} is a little different, since it receives in input two images:
 \begin{equation}
     E(I_c^1, I_c^2) = (x_c^{rel^2}, q_c^{rel})
