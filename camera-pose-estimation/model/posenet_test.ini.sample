@@ -1,0 +1,13 @@
+[environment]
+experiment_name = "experiment_name"
+run_name = "run_name"
+
+[paths]
+save_processed_dataset = true
+net_weights_dir = "/path/to/dir"
+# test_dataset can be a csv files or a path where there are preprocessed dataset
+test_dataset = "/path/to/preprocessed/dir"
+test_dataset = "/path/to/file.csv"
+targets = "/path/to/file.csv"
+predictions = "/path/to/file.csv"
+images = "/path/to/dir"

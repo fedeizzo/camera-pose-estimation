@@ -1,0 +1,3 @@
+[paths]
+dump_metrics = "/path/to/file.csv"
+aim_dir = "/path/to/aim/dir"
