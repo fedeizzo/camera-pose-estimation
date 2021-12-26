@@ -2,8 +2,10 @@
 experiment_name = "experiment_name"
 run_name = "run_name"
 
-[paths]
+[dataloader]
 save_processed_dataset = true
+
+[paths]
 net_weights_dir = "/path/to/dir"
 # test_dataset can be a csv files or a path where there are preprocessed dataset
 test_dataset = "/path/to/preprocessed/dir"

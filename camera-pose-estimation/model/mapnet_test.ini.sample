@@ -5,6 +5,7 @@ run_name = "run_name"
 [dataloader]
 ; required only with 7scenes dateset
 sequences = {"test": "seq-02"}
+save_processed_dataset = true
 
 [paths]
 net_weights_dir = "path"
@@ -15,4 +16,3 @@ predictions = "path"
 images = "/data/images"
 ; only required with dataset generated with colmap.
 ; possible option false and true
-save_processed_dataset = true
