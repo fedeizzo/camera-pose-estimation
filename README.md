@@ -11,8 +11,8 @@ Currently absolute pose estimation models are:
 
 ### PoseNet
 In order to run PoseNet it is required to create a config files:
-- [train](./camera-pose-estimation/model/posenet_train.ini)
-- [test](./camera-pose-estimation/model/posenet_test.ini)
+- [train](./camera-pose-estimation/model/posenet_train.ini.sample)
+- [test](./camera-pose-estimation/model/posenet_test.ini.sample)
 
 *Train*
 ```bash
