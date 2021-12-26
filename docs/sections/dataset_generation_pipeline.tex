@@ -1,97 +1,107 @@
 \section{Dataset generation}
 \subsection{Tested approaches}
-The deep learning approaches explained in this document are \textit{supervised learning} techniques that require a labeled dataset. Several paths were tested in order to generate this kind of dataset:
+The deep learning approaches applied in this document are \textit{supervised learning} techniques that require a labeled dataset. Many attempts were made in order to generate a high-quality dataset for the deep learning models:
 \begin{itemize}
-    \item \emph{IMU sensors}: usage of gyroscope and accelerometer sensors of a smartphone to estimate the position of the camera during a video given a fixed origin point. 
-    \item \emph{digital video}: usage of free online 3 dimensional datasets in which video can be recorder in a digital way.
-    \item \emph{motion capture system}: usage of a motion capture system that estimates the camera position following some tracking objects attached to the subject.
-    \item \emph{structure from motion techniques}: techniques that compute a sparse and dense reconstruction from a sequence of images.
+    \item \emph{IMU sensors}: usage of gyroscope and accelerometer sensors of a smartphone to estimate the position of the camera during a video given a fixed origin point. The process of combining multiple noisy information sources to obtain a good estimation can be achieved through Kalman filters;
+    \item \emph{digital video}: usage of free online 3 dimensional datasets in which video can be recorder in a digital way;
+    \item \emph{motion capture system}: usage of a motion capture system that estimates the camera position following some tracking objects attached to the subject;
+    \item \emph{structure from motion techniques}: techniques that digitally reconstruct environments from a sequence of images with point clouds.
 \end{itemize}
 
-The main problem encountered with IMU sensors was the high noise presence during acquisitions, the final signal was very dirty, and the resolution was not acceptable for the dataset generation. A possible solution could have been the usage of a well calibrated hardware used in other kind of contexts.
+The main problem encountered with IMU sensors is the high presence of noise during data acquisition: this caused the processed signal to be very dirty, so much that the precision is not acceptable for out intentions. A possible solution could have been to use some well calibrated hardware used in a controlled environment.
 
-Most of the 3 dimensional acquisitions available online for free are acquired with \emph{depth sensors} or \emph{LIDAR sensors}, for this reason although the camera pose estimation would not have presented any errors the images would have been at low quality.
+Most of the online-available 3D acquisitions are acquired with \emph{depth sensors} or \emph{LIDAR sensors}. For this reason, although the camera pose estimation would have been very precise, we could not reproduce this acquisition system in the University of Trento. In addition to that, only few datasets are freely available, and they usually lack of good documentation regarding how they were captured.
 
-The motion capture system is able to follows the position of the tracked objects with extremely precision, the main problematic remains the association of poses to video captured from the camera held by the tracked subject. Other difficulties involved the calibration of the tool.
+The motion capture system is able to follow the position of the tracked objects with extreme precision. In this case the main problems are related to the association of poses to video captured from the camera held by the tracked subject and difficulties involved in the system calibration.
 
-The techniques of structure from motion were invented with the goal of generate structures for which a huge amount of photos is available. The overall idea is to feed the algorithm with data in order to extract feature and build a recomposition of the environment. A step required in order to obtain a result is the estimation of the pose of images. These intermediate requirement have been exploited by us to generate a labeled dataset.
+The techniques of structure from motion are used to generate 3D models in case many photos are available. The overall idea is to feed the algorithm with these images in order to extract features and build a recomposition of the environment through a point cloud.
+During the reconstruction process, structure from motion tools also computes camera poses in an arbitrary reference system: this intermediate requirement have been exploited by us to generate a labeled dataset, as presented in \cref{fig:trajectory-colmap}.
 
-\subsection{Pipeline}
-The implemented pipeline require a video captured by any camera, it is not required any calibration of the sensor. It is composed by several steps:
-\begin{enumerate}
-    \item video split: the captured video is split into many frames; 
-    \item structure from motion: images obtained from the previous step are fed into a structure motion tool called \emph{COLMAP};
-    \item cross validation dataset: positions obtained during the camera estimation of the reconstruction process are split into three batches: train, validation, test.
-\end{enumerate}
-
-\begin{figure}[h]
+\begin{figure}[htbp]
     \begin{center}
         \includegraphics[width=0.45\textwidth]{./imgs/trajectory_colmap.png}
     \end{center}
-    \caption{Trajectory computed by COLMAP}
+    \caption{Trajectory computed by COLMAP in the second floor of the Povo 1 building in the University of Trento. Note that structure from motion techniques may not detect closed-loops.}
     \label{fig:trajectory-colmap}
 \end{figure}
 
-In \cref{fig:trajectory-colmap} is presented the trajectory obtained with the structure from motion techinque through COLMAP. The process involes a feature extraction phase.
+\subsection{Pipeline}
+In this section we present an automatic pipeline which can be used to generate a camera pose estimation dataset using structure from motion techniques. The pipeline requires as input a video captured by any camera, even without sensor calibration. It is composed by several steps:
+\begin{enumerate}
+    \item video split: the captured video is split into many frames using \texttt{ffmpeg};
+    \item structure from motion: frames obtained from the previous step are fed into a structure motion tool. In our case we are using \texttt{COLMAP}~\cite{colmap};
+    \item dataset splitting: positions obtained during the camera estimation of the reconstruction process are split into three subsets: train, validation, and test.
+\end{enumerate}
+
+In \cref{fig:trajectory-colmap} is presented the trajectory obtained with the structure from motion technique through COLMAP. The process involves a feature extraction phase.
 
 \subsection{COLMAP reconstruction}
-COLMAP~\cite{colmap} is a tool that allows to build a 3D reconstruction (model) of an environment. There exists two types of models, \textit{sparse} and \textit{dense} and both of them are composed by:
+COLMAP~\cite{colmap} is a tool that allows to build a 3D point cloud reconstruction model of an environment by using photos of it. It is possible to generate point clouds with two different levels of precision: \emph{sparse} and \emph{dense}, and both of them are composed by:
 \begin{itemize}
-    \item a set of points $P$ which are features of the environment (dots on \cref{fig:features-colmap});
-    \item a set of poses $\mathcal{V}$ associated witht the images used for the reconstruction (red squares on \cref{fig:features-colmap});
-    \item a Coordinate Reference system.
+    \item a set of points $P$ which represent the features extracted from the photos (points in \cref{fig:features-colmap});
+    \item a set of poses $\mathcal{V}$ associated with the images used for the reconstruction (red line in \cref{fig:features-colmap});
+    \item a \emph{coordinate reference system} (CRS).
 \end{itemize}
 
-\begin{figure}[h]
+\begin{figure}[htbp]
     \begin{center}
         \includegraphics[width=0.45\textwidth]{./imgs/extracted_features_colmap.png}
     \end{center}
-    \caption{Features extracted by COLMAP}
+    \caption{Features extracted as a point cloud by COLMAP in the second floor of the Povo 1 building in the University of Trento. The red line represents the camera path.}
     \label{fig:features-colmap}
 \end{figure}
 
-The set of poses are represented as a graph $\mathcal{G}=(\mathcal{V}, \mathcal{E})$ and for each node there is an association with a subset of environment features $\mathcal{V} = \{R\}\quad R\subset P$. Edges $\mathcal{E}$ connect following poses.
+The set of poses is represented as a graph $\mathcal{G}=(\mathcal{V}, \mathcal{E})$ and for each node $i$ there is an association with a subset of environment features $\mathcal{F}_i : \mathcal{F}_i\subset P$. Edges in $\mathcal{E}$ connect poses from images that use common features.
 
-The algorithm that creates a sparse model extracts features from each given image and build the set $P$ called \textit{bag of words}. Once this is done, thanks to a convolution on each image, the next step is to created associations between node of the graph. The convolution enables to map only subsection of the whole image, this allows to estimate the movement based on the position of the matrix used for the convolution within the image grid. The bag of words is consulted at every step. Once associations are done the features and the poses are composed in order to create the sparse model.
+The sparse reconstruction algorithm firstly extracts features from each given image and builds the set $P$ called \emph{bag of words}. Once this is done, thanks to a convolution on each image, it creates spacial association between nodes in the graph comparing images with the bag of words. The convolution enables to map only subsections of the whole image: this allows to estimate the movement based on the position of the matrix used for the convolution within the image grid. Once associations are done, the features and the poses are composed in order to create the reconstructed model.
 
-The algorithm for the dense model is very similar to the one used for the sparse. Tha main differences is how the association are created, it is not used a convolution but a pointwise method. This allows to be more accurate and create a more definite cloud of points increasing the computational time.
+Also, the algorithm for the dense model is very similar to the one used for the sparse. The main difference is about how the association are created: in this case the algorithm uses point-wise associations and not convolutions. Even if it requires more computational resources, this approach allows to be more accurate and to create a more definite point cloud.
 
-The settings used for sparse dataset generation of Povo 1 used a sequence of images with Poisson mesher.
+Both algorithms can work on a sequence of unrelated photos of the same environment or a sorted sequence of frames: note that the reconstruction process is way more efficient in the second case.
 
 \subsection{Coordinate reference system alignment}
-The dataset generated by COLMAP has a \textit{coordinate reference system (CRS)} choosen arbitrarily during the reconstruction. Origin and axes of the system may not concide with the real world CRS. In order to be able to place a prediction on a map it is required to rotate and translate until an alignment is reached.
-
-This task was accomplished through the Euclidean or Rigid transformation, it invoves a rotation $R$, a translation $t$ and at least three points for both the CRSs that represents the same locations $A=\{(x_1^A, y_1^A), (x_2^A, y_2^A), (x_3^A, y_3^A)\}$, $B=\{(x_1^B, y_1^B), (x_2^B, y_2^B), (x_3^B, y_3^B)\}$. In \cref{eq:rigid-tranform} is presented the equation of the rigid transform.
+The dataset generated by COLMAP has a \emph{coordinate reference system (CRS)} chosen arbitrarily during the reconstruction. Origin and axes of the COLMAP system may not coincide (actually this is always the case) with the real-world CRS. In order to align them, three steps are required:
+\begin{enumerate}
+    \item scale: it is necessary to scale the relative positions of the points with respect to the real-world CRS. This can be achieved measuring the distance between two known points in both COLMAP and real life;
+    \item translation: align the origins;
+    \item rotation: align the axes.
+\end{enumerate}
+The last two steps can be grouped together by using the euclidean or rigid transformation.
+It involves a rotation $R$, a translation $t$ and at least three points for both the CRSs that represent the same locations. \Cref{eq:rigid-tranform} describes the rigid transformation.
 \begin{equation}
-    R\times A+t = B
+    \begin{aligned}
+        A & =\{(x_1^A, y_1^A), (x_2^A, y_2^A), (x_3^A, y_3^A)\} \\
+        B & =\{(x_1^B, y_1^B), (x_2^B, y_2^B), (x_3^B, y_3^B)\} \\
+        B & = R \times A+t
+    \end{aligned}
     \label{eq:rigid-tranform}
 \end{equation}
 
-Matrix $R$ and vector $t$ are obtained using \textit{Singular value decomposition (SVD)}, it takes a matrix $E$ and return 3 other matrices, such that: 
+Matrix $R$ and vector $t$ are obtained using \textit{Singular Value Decomposition (SVD)}, it takes a matrix $E$ and return 3 other matrices, such that:
 \begin{equation}
     \begin{aligned}
-        [U, S, V] &= SVD(E)\\
-        E &= USV^T
+        [U, S, V] & = \textrm{SVD}(E) \\
+        E         & = USV^T
     \end{aligned}
     \label{eq:singular-value-decomposition}
 \end{equation}
 
-The first step needed to extract the matrix $R$ is the alignment on the same origin of the datasets centroids. This is done subtracting to each coordinate of each point the centroid of the dataset. Once this is done it is possible to ignore the component of the translation $t$ and compute the rotation $R$:
+To obtain the matrix $R$, the first step consists in aligning on the same origin the two datasets centroids. This is done by subtracting to each coordinate of each point the centroid of the respective dataset. After this, it is possible to ignore the translation component $t$ and compute the rotation $R$:
 \begin{equation}
     \begin{aligned}
-        H &=(A-\text{centroid}_A)(B-\text{centroid}_B)^T\\
-        [U, S, V] &= SVD(H)\\
-        R &=VU^T
+        H         & = (A-\textrm{centroid}_A)(B-\textrm{centroid}_B)^T \\
+        [U, S, V] & = \textrm{SVD}(H)                                          \\
+        R         & = VU^T
     \end{aligned}
     \label{eq:rotation-matrix}
 \end{equation}
 
-Finally it is possible to use the \cref{eq:rigid-tranform} to obtain the translation vector $t$:
+Finally, it is possible to use the \cref{eq:rigid-tranform} to obtain the translation vector $t$:
 \begin{equation}
     \begin{aligned}
-        R\times A + T &= B\\
-        R\times \text{centroid}_A + T &= \text{centroid}_B\\
-        t &= \text{centroid}_B - R\times \text{centroid}_A
+        B =                   & R\times A + T                                     \\
+        \textrm{centroid}_B = & R\times \textrm{centroid}_A + T                   \\
+        t =                   & \textrm{ centroid}_B - R\times \textrm{centroid}_A
     \end{aligned}
     \label{eq:translation-vector}
 \end{equation}
