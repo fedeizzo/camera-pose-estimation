@@ -2,7 +2,7 @@
 In the literature there are many deep learning approaches used to perform RPE and APE: here we focus on MeNet for the first and PoseNet~\cite{9348762} and MapNet~\cite{DBLP:journals/corr/abs-1712-03342} for the latter.
 
 APE deep learning models rely mostly on \emph{transfer learning}: the idea is to use SOTA vision models to extract features from images and use them to estimate camera extrinsics.
-The PoseNet model (link to paper) has been the first to be developed following this idea. The starting network for the knowledge transfer was a GoogLeNet (link to paper), where the softmax classification layer is replaced with a sequence of fully connected layers. Even if the obtained results are decent, the model lacks of generalization when applied to unseen scenes.
+The PoseNet model has been the first to be developed following this idea. The starting network for the knowledge transfer was a GoogLeNet~\cite{googlenet}, where the softmax classification layer is replaced with a sequence of fully connected layers. Even if the obtained results are decent, the model lacks of generalization when applied to unseen scenes.
 
 In order to solve this problem, other techniques have been developed, which can be classified in:
 \begin{itemize}
