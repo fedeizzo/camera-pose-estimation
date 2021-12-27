@@ -75,7 +75,7 @@ In addition, trying to obtain the best results, different loss functions have be
 \Cref{fig:trajectory-posenet} show a visual representation of the model performances. It is easy to notice that even if the predictions are almost in the same map zone with respect to their ground truth, they are still pretty sparse. The mean error between prediction and target is $2000 cm$.
 
 \subsection{MapNet}
-To prevent sparsification in the model outputs, we propose the use of the MapNet. As for the PoseNet, also in this case several pre-trained models can be used as features extractor: \cref{tab:mapnet-backends} shows some candidates, each one used with three final linear layers.
+To prevent sparsification in the model outputs, we propose to use the MapNet~\cite{mapnet}. As for the PoseNet, also in this case several pre-trained models can be used as feature extractor: \cref{tab:mapnet-backends} shows some candidates, each one used with three final linear layers.
 In this case the overall trend is similar: this highlights that the extracted features are enough for the task independently of the backbone used. Another interesting difference with \cref{tab:posenet-backends} is the fact that models with more parameters are not the one performing better.
 \begin{table}[htbp]
     \caption{MapNet backend comparison}
@@ -109,14 +109,14 @@ Following the example of \cref{fig:posenet-losses} for the PoseNet model, \cref{
 
 In this case, as can be seen in \cref{fig:trajectory-mapnet}, the custom MapNet predictions follow more closely the ground truth path with respect to the ones described by the PoseNet in \cref{fig:trajectory-posenet}.
 
-Since this approach has been shown to still include some imperfections, we have also included a post-processing algorithm which tries to correct the model prediction. To be more specific, if the model prediction is not in a walkable spot in the map, then the output is going to be the nearest walkable point on the map according to the Euclidean distance criterion. The postprocessing allows to go from a mean error between prediction and target of $153 cm$ to $130 cm$. The result can be viewed in \cref{fig:trajectory-mapnet-walkable}.
+Since this approach has been shown to still include some imperfections, we have also included a post-processing algorithm which tries to correct the model prediction. To be more specific, if the model prediction is not in a walkable spot in the map, then the output is going to be the nearest walkable point on the map according to the Euclidean distance criterion. The post-processing procedure allows to reduce the mean absolute error between predictions and targets from $153 cm$ to $130 cm$: the results can be viewed in \cref{fig:trajectory-mapnet-walkable}.
 
 \subsection{Dashboard}
-To be able to deploy the model, a web-server has been developed with FastAPI: this interface aims to easily allow users to interact with the production model through a web-based Bootstrap dashboard.
+To be able to deploy the model, a web-server has been developed with FastAPI: this interface aims to easily allow users to interact with the final model through a web-based Bootstrap dashboard.
 The dashboard can show the model predictions in three different ways:
 \begin{itemize}
-    \item raw model output which can be in a non-walkable zone displayed through an alert;
-    \item raw model output which can be in a non-walkable zone shown in the floor map;
+    \item raw model output displayed through an alert;
+    \item raw model output shown in the floor map;
     \item post-processed model output in a walkable zone in the floor map.
 \end{itemize}
 \Cref{fig:dashboard} presents the \textit{UI} for showing post-precessed model outputs: red zones are not walkable areas.
