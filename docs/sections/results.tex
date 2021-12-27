@@ -2,7 +2,7 @@
 
 \subsection{Dataset}
 To test the already discussed data generation pipeline and deep learning models, we try to map the second floor of the Povo 1 building in the University of Trento.
-We filmed a single vertical video with a smartphone at 2160x3840px 30fps of the entire floor, avoiding moving objects and people. The frames have been extracted at 10fps, resulting in 1462 images for a total of 13.1 GB. COLMAP has been used to generate a sparse reconstruction map using the Poisson mesher, high quality, shared intrinsics, and simple\_radial camera model.
+We filmed a single vertical video with a smartphone (model: OPPO reno 4 CPH2091) at 2160x3840px 30fps of the entire floor, avoiding moving objects and people. The frames have been extracted at 10fps, resulting in 1462 images for a total of 13.1 GB. COLMAP has been used to generate a sparse reconstruction map using the Poisson mesher, high quality, shared intrinsics, and simple\_radial camera model.
 Due to COLMAP limitations, different runs have been necessary, since the final reconstruction was not good enough, especially in terms of closed-loop detection: \cref{fig:trajectory-colmap} shows the best achieved result that has been used.
 
 Due to the models' backend implementation, input images of the model should be 224x224: for this reason, resizing and center cropping has been adopted. The final size of the processed dataset is 880.3 MB. Train, validation, and test datasets have equal size and have been generated using the $\mod{3}$ operation on the frame index: in this way, adjacent frames are included in different datasets.
@@ -30,6 +30,16 @@ Since several pre-trained models can be used as the PoseNet backend, in \cref{ta
 \end{table}
 
 In addition, trying to obtain the best results, different loss functions have been tested in the \cref{eq:menet-loss}. Note that in case of $\alpha \neq 1$ and MSE, the training loss is not tractable (goes to infinity).
+\begin{figure}[htbp]
+    \begin{center}
+        \includegraphics[width=0.4\textwidth]{./imgs/posenet_losses.png}
+    \end{center}
+    \caption{PoseNet (ResNet-152) losses.}
+    \label{fig:posenet-losses}
+\end{figure}
+
+\Cref{fig:posenet-losses} shows the SmoothedL1Loss and L1Loss loss curves for a ResNet-152 PoseNet. It is possible to notice from \cref{tab:posenet-losses} that both in each of the two cases, the model is converging without overfitting.
+
 \begin{table}[htbp]
     \caption{PoseNet losses comparison}
     \begin{center}
@@ -47,23 +57,22 @@ In addition, trying to obtain the best results, different loss functions have be
     \end{center}
 \end{table}
 
-\Cref{fig:posenet-losses} shows the SmoothedL1Loss and L1Loss loss curves for a ResNet-152 PoseNet. It is possible to notice that both in each of the two cases, the model is converging without overfitting.
-\begin{figure}[htbp]
-    \begin{center}
-        \includegraphics[width=0.48\textwidth]{./imgs/posenet_losses.png}
-    \end{center}
-    \caption{PoseNet (ResNet-152) losses.}
-    \label{fig:posenet-losses}
-\end{figure}
-
-\Cref{fig:trajectory-posenet} show a visual representation of the model performances. It is easy to notice that even if the predictions are almost in the same map zone with respect to their ground truth, they are still pretty sparse.
 \begin{figure*}[htbp]
-    \begin{center}
-        \includegraphics[width=0.95\textwidth]{./imgs/posenet_map.png}
-    \end{center}
-    \caption{Predicted trajectory with PoseNet (ResNet-152).}
-    \label{fig:trajectory-posenet}
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=1\textwidth]{./imgs/posenet_map.png}
+        \caption{Predicted trajectory with PoseNet (ResNet-152).}
+        \label{fig:trajectory-posenet}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=1\textwidth]{./imgs/mapnet_map.png}
+        \caption{Predicted trajectory MapNet (ResNet-34).}
+        \label{fig:trajectory-mapnet}
+    \end{subfigure}
+    \caption{Estimated trajectories.}
 \end{figure*}
+\Cref{fig:trajectory-posenet} show a visual representation of the model performances. It is easy to notice that even if the predictions are almost in the same map zone with respect to their ground truth, they are still pretty sparse.
 
 \subsection{MapNet}
 To prevent sparsification in the model outputs, we propose the use of the MapNet. As for the PoseNet, also in this case several pre-trained models can be used as features extractor: \cref{tab:mapnet-backends} shows some candidates, each one used with three final linear layers.
@@ -92,29 +101,15 @@ Another interesting point is the importance of the final linear encoder, represe
 Following the example of \cref{fig:posenet-losses} for the PoseNet model, \cref{fig:mapnet-losses} shows a comparison on the ResNet-34 MapNet for the training and validation curves for different losses. Also in this case the model is converging without overfitting.
 \begin{figure}[htbp]
     \begin{center}
-        \includegraphics[width=0.48\textwidth]{./imgs/mapnet_losses.png}
+        \includegraphics[width=0.4\textwidth]{./imgs/mapnet_losses.png}
     \end{center}
     \caption{MapNet (ResNet-34) losses}
     \label{fig:mapnet-losses}
 \end{figure}
 
 In this case, as can be seen in \cref{fig:trajectory-mapnet}, the custom MapNet predictions follow more closely the ground truth path with respect to the ones described by the PoseNet in \cref{fig:trajectory-posenet}.
-\begin{figure*}[htbp]
-    \begin{center}
-        \includegraphics[width=0.95\textwidth]{./imgs/mapnet_map.png}
-    \end{center}
-    \caption{Predicted trajectory MapNet}
-    \label{fig:trajectory-mapnet}
-\end{figure*}
 
-Since this approach has been shown to still include some imperfections, we have also included a post-processing algorithm which tries to correct the model prediction. To be more specific, if the model prediction is not in a walkable spot in the map, then the output is going to be the nearest walkable point on the map according to the Euclidean distance criterion.
-\begin{figure*}[htbp]
-    \begin{center}
-        \includegraphics[width=0.95\textwidth]{./imgs/walkable_postprocess.png}
-    \end{center}
-    \caption{Predictions post-processed on walkable areas}
-    \label{fig:trajectory-mapnet-walkable}
-\end{figure*}
+Since this approach has been shown to still include some imperfections, we have also included a post-processing algorithm which tries to correct the model prediction. To be more specific, if the model prediction is not in a walkable spot in the map, then the output is going to be the nearest walkable point on the map according to the Euclidean distance criterion. The result can be viewed in \cref{fig:trajectory-mapnet-walkable}.
 
 \subsection{Dashboard}
 To be able to deploy the model, a web-server has been developed with FastAPI: this interface aims to easily allow users to interact with the production model through a web-based Bootstrap dashboard.
@@ -126,9 +121,16 @@ The dashboard can show the model predictions in three different ways:
 \end{itemize}
 \Cref{fig:dashboard} presents the \textit{UI} for showing post-precessed model outputs: red zones are not walkable areas.
 \begin{figure*}[htbp]
-    \begin{center}
-        \includegraphics[width=0.95\textwidth]{./imgs/dashboard.png}
-    \end{center}
-    \caption{Inference dashboard}
-    \label{fig:dashboard}
+    \begin{subfigure}[b]{0.542\textwidth}
+        \includegraphics[width=1\textwidth]{./imgs/dashboard.png}
+        \caption{Inference dashboard.}
+        \label{fig:dashboard}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.438\textwidth}
+        \includegraphics[width=1\textwidth]{./imgs/walkable_postprocess.png}
+        \caption{Predictions post-processed on walkable areas.}
+        \label{fig:trajectory-mapnet-walkable}
+    \end{subfigure}
+    \caption{Non walkable area maps.}
 \end{figure*}

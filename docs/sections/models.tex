@@ -2,7 +2,7 @@
 In this work we take in consideration some state-of-the-art deep learning models for camera pose estimation, also with additional small modifications to make them fit better to our use case scenario.
 In particular, we present:
 \begin{itemize}
-    \item MeNet (add citation) for RPE;
+    \item MeNet~\cite{menet} for RPE;
     \item PoseNet~\cite{9348762} and MapNet~\cite{mapnet} for APE.
 \end{itemize}
 
@@ -74,16 +74,18 @@ The MapNet model for APE represents an evolution of the PoseNet model: in fact, 
 
 Another difference with respect to the PoseNet is the loss function used to train the model. In this case, the errors in the prediction of absolute poses are not the only ones which are penalized: in fact, also errors in the relative poses are taken in consideration. To be able to penalize also relative errors, during the training process the model receives as input a batch of \texttt{step} ($s$) sorted frames, that are separated by \texttt{skip} ($k$) frames in the original video.
 
-\begin{multline}
-    L_\mathcal{D}(\Theta) = \sum\limits_{i=1}^{|\mathcal{D}|} h([\hat{P}^i \hat{Q}^i], [P^i Q^i])\\
-    + \alpha\sum\limits_{i,j=1, i\neq j}^{|\mathcal{D}|} h([\hat{P}^{ij} \hat{Q}^{ij}], [P^{ij} Q^{ij}])
+\small
+\begin{equation}
+    L_\mathcal{D}(\Theta) = \sum\limits_{i=1}^{|\mathcal{D}|} h([\hat{P}^i \hat{Q}^i], [P^i Q^i]) + \alpha\sum\limits_{i,j=1, i\neq j}^{|\mathcal{D}|} h([\hat{P}^{ij} \hat{Q}^{ij}], [P^{ij} Q^{ij}])
     \label{eq:mapnet-loss}
-\end{multline}
+\end{equation}
+\normalsize
 where $[P^{ij} Q^{ij}]$ is the relative camera pose between pose predictions $[P^i Q^i]$ and $[P^j Q^j]$ for images $I^i$ and $I^j$.
 $h(\cdot)$ is a function to measure the distance between the predicted camera pose $p$ and the ground truth camera pose $p^*$, defined as:
-\begin{multline}
-    h([\hat{P}^i \hat{Q}^i], [P^i Q^i]) = \norm{\hat{P}^i-P^i}_1 e^{-\beta} + \beta\\
-    + \norm{\hat{Q}^i-Q^i}_1 e^{-\gamma} + \gamma
+\small
+\begin{equation}
+    h([\hat{P}^i \hat{Q}^i], [P^i Q^i]) = \norm{\hat{P}^i-P^i}_1 e^{-\beta} + \beta + \norm{\hat{Q}^i-Q^i}_1 e^{-\gamma} + \gamma
     \label{eq:mapnet-loss-h}
-\end{multline}
+\end{equation}
+\normalsize
 where $\beta$ and $\gamma$ are the weights that balance the translation loss and rotation loss. Both the parameters can be learned as well during the training procedure. $(I^i, I^j)$ are image pairs within each tuple of $s$ images sampled with a gap of $k$ frames from $\mathcal{D}$.

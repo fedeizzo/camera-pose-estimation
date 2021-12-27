@@ -5,7 +5,7 @@ The deep learning approaches applied in this document are \textit{supervised lea
     \item \emph{IMU sensors}: usage of gyroscope and accelerometer sensors of a smartphone to estimate the position of the camera during a video given a fixed origin point. The process of combining multiple noisy information sources to obtain a good estimation can be achieved through Kalman filters;
     \item \emph{digital video}: usage of free online 3 dimensional datasets in which video can be recorder in a digital way;
     \item \emph{motion capture system}: usage of a motion capture system that estimates the camera position following some tracking objects attached to the subject;
-    \item \emph{structure from motion techniques}: techniques that digitally reconstruct environments from a sequence of images with point clouds.
+    \item \emph{structure from motion techniques}: techniques that digitally reconstruct environments from a sequence of images with points clouds.
 \end{itemize}
 
 The main problem encountered with IMU sensors is the high presence of noise during data acquisition: this caused the processed signal to be very dirty, so much that the precision is not acceptable for out intentions. A possible solution could have been to use some well calibrated hardware used in a controlled environment.
@@ -14,7 +14,7 @@ Most of the online-available 3D acquisitions are acquired with \emph{depth senso
 
 The motion capture system is able to follow the position of the tracked objects with extreme precision. In this case the main problems are related to the association of poses to video captured from the camera held by the tracked subject and difficulties involved in the system calibration.
 
-The techniques of structure from motion are used to generate 3D models in case many photos are available. The overall idea is to feed the algorithm with these images in order to extract features and build a recomposition of the environment through a point cloud.
+The techniques of structure from motion are used to generate 3D models in case many photos are available. The overall idea is to feed the algorithm with these images in order to extract features and build a recomposition of the environment through a points cloud.
 During the reconstruction process, structure from motion tools also computes camera poses in an arbitrary reference system: this intermediate requirement have been exploited by us to generate a labeled dataset, as presented in \cref{fig:trajectory-colmap}.
 
 \begin{figure}[htbp]
@@ -36,7 +36,7 @@ In this section we present an automatic pipeline which can be used to generate a
 In \cref{fig:trajectory-colmap} is presented the trajectory obtained with the structure from motion technique through COLMAP. The process involves a feature extraction phase.
 
 \subsection{COLMAP reconstruction}
-COLMAP~\cite{colmap} is a tool that allows to build a 3D point cloud reconstruction model of an environment by using photos of it. It is possible to generate point clouds with two different levels of precision: \emph{sparse} and \emph{dense}, and both of them are composed by:
+COLMAP~\cite{colmap} is a tool that allows to build 3D point clouds reconstruction model of an environment by using photos of it. It is possible to generate point clouds with two different levels of precision: \emph{sparse} and \emph{dense}, and both of them are composed by:
 \begin{itemize}
     \item a set of points $P$ which represent the features extracted from the photos (points in \cref{fig:features-colmap});
     \item a set of poses $\mathcal{V}$ associated with the images used for the reconstruction (red line in \cref{fig:features-colmap});
@@ -55,7 +55,7 @@ The set of poses is represented as a graph $\mathcal{G}=(\mathcal{V}, \mathcal{E
 
 The sparse reconstruction algorithm firstly extracts features from each given image and builds the set $P$ called \emph{bag of words}. Once this is done, thanks to a convolution on each image, it creates spacial association between nodes in the graph comparing images with the bag of words. The convolution enables to map only subsections of the whole image: this allows to estimate the movement based on the position of the matrix used for the convolution within the image grid. Once associations are done, the features and the poses are composed in order to create the reconstructed model.
 
-Also, the algorithm for the dense model is very similar to the one used for the sparse. The main difference is about how the association are created: in this case the algorithm uses point-wise associations and not convolutions. Even if it requires more computational resources, this approach allows to be more accurate and to create a more definite point cloud.
+Also, the algorithm for the dense model is very similar to the one used for the sparse. The main difference is about how the association are created: in this case the algorithm uses point-wise associations and not convolutions. Even if it requires more computational resources, this approach allows to be more accurate and to create more definite points cloud.
 
 Both algorithms can work on a sequence of unrelated photos of the same environment or a sorted sequence of frames: note that the reconstruction process is way more efficient in the second case.
 
