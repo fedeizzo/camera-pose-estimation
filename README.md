@@ -170,7 +170,6 @@ learn_gamma = true
 [optimizer]
 name = "SGD"
 lr = 0.05
-; decay = 0.0
 momentum = 0.9
 
 [scheduler]

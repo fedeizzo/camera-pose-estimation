@@ -109,7 +109,7 @@ Following the example of \cref{fig:posenet-losses} for the PoseNet model, \cref{
 
 In this case, as can be seen in \cref{fig:trajectory-mapnet}, the custom MapNet predictions follow more closely the ground truth path with respect to the ones described by the PoseNet in \cref{fig:trajectory-posenet}.
 
-Since this approach has been shown to still include some imperfections, we have also included a post-processing algorithm which tries to correct the model prediction. To be more specific, if the model prediction is not in a walkable spot in the map, then the output is going to be the nearest walkable point on the map according to the Euclidean distance criterion. The result can be viewed in \cref{fig:trajectory-mapnet-walkable}.
+Since this approach has been shown to still include some imperfections, we have also included a post-processing algorithm which tries to correct the model prediction. To be more specific, if the model prediction is not in a walkable spot in the map, then the output is going to be the nearest walkable point on the map according to the Euclidean distance criterion. The postprocessing allows to goes from a mean error between prediction and target of $153 cm$ to $130 cm$. The result can be viewed in \cref{fig:trajectory-mapnet-walkable}.
 
 \subsection{Dashboard}
 To be able to deploy the model, a web-server has been developed with FastAPI: this interface aims to easily allow users to interact with the production model through a web-based Bootstrap dashboard.
