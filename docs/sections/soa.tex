@@ -1,0 +1,15 @@
+\section{Related works}
+In the literature there are many deep learning approaches used to perform RPE and APE: here we focus on MeNet for the first and PoseNet~\cite{9348762} and MapNet~\cite{mapnet} for the latter, since they can get good results without requiring huge computational costs.
+
+APE deep learning models rely mostly on \emph{transfer learning}: the idea is to use SOTA pre-trained vision models to extract features from images and use them to estimate camera extrinsics.
+The PoseNet model has been the first to be developed following this idea. The starting network for the knowledge transfer is a GoogLeNet~\cite{googlenet}, where the softmax classification layer is replaced with a sequence of fully connected layers. Even if the obtained results are decent, the model (1) lacks of generalization when applied to unseen scenes and (2) fails in learning complex environments.
+
+In order to solve these problems, other techniques have been developed, which can be classified in:
+\begin{itemize}
+    \item \emph{end-to-end} approaches;
+    \item \emph{hybrid} approaches.
+\end{itemize}
+
+Most of the end-to-end proposed models are based on the PoseNet architecture, with the addition of some components, such as \emph{encoder/decoder blocks}, \emph{linear layers}, and \emph{LSTM blocks}. The most successful model on this category is MapNet, with its related variants MapNet+ and MapNet+PGO~\cite{mapnet}.
+
+On the other hand, hybrid approaches instead try to focus on different support tasks with the goal of helping the final pose prediction. Those techniques rely on unsupervised learning, 3D objects reconstruction and other data extracted with external tools: for these reasons, such methods are not considered in this work.
