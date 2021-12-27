@@ -1,20 +1,20 @@
 \section{Models}
-In this work we take in consideration some SOTA models for camera pose estimation, also adding small modifications to make them fit better to our use case scenario.
+In this work we take in consideration some state-of-the-art deep learning models for camera pose estimation, also with additional small modifications to make them fit better to our use case scenario.
 In particular, we present:
 \begin{itemize}
     \item MeNet (add citation) for RPE;
-    \item PoseNet~\cite{9348762} and MapNet~\cite{DBLP:journals/corr/abs-1712-03342} for APE.
+    \item PoseNet~\cite{9348762} and MapNet~\cite{mapnet} for APE.
 \end{itemize}
 
 \subsection{MeNet}
-The first model we would like to analyze is the MeNet model (\cref{fig:menet-structure}), which is specifically targeted for RPE.
+The first model we would like to analyze is the MeNet model, that is specifically targeted for RPE.
 The input of the network consists in a stack of two images: the goal is to estimate the relative pose of the second image with respect to the first one.
-As presented in \cref{fig:menet-structure}, the MeNet is composed by nine deep convolutional layers followed by a pair of linear layers. While the first part of the network works as a feature extraction mechanism, the last layers are used to combine the extracted features.
-\begin{figure}
+As shown in \cref{fig:menet-structure}, the MeNet is composed by nine deep convolutional layers followed by a pair of linear layers. While the first part of the network covers the role of feature extraction, the last layers are used to combine the extracted features.
+\begin{figure}[htbp]
     \begin{center}
         \includegraphics[width=0.32\textwidth]{./imgs/menet_structure.png}
     \end{center}
-    \caption{The architecture of the MeNet model.}
+    \caption{MeNet model architecture.}
     \label{fig:menet-structure}
 \end{figure}
 
@@ -26,14 +26,25 @@ In order to train the model, we use a loss function that consists in the weighte
 where $P$, $\hat{P}$, $Q$, $\hat{Q}$, and $\alpha$ are the ground truth position vector, the estimated position vector, the ground truth quaternions, the estimated quaternions, and the weight for balancing the displacement error and the rotation angle error.
 
 \subsection{PoseNet}
-Since the results given by RPE deep learning solutions are not very promising, from now on we are going to consider models strictly developed for APE.
+Since the results given by RPE deep learning solutions are not very promising due to the lack of generalization and cumulative errors, from now on we are going to consider models strictly developed for APE.
 In this sense, the first model we present is the PoseNet model~\cite{9348762}.
-Just like the MeNet model, the PoseNet is made up by two components:
+As shown in \cref{fig:mapnet-posenet-structure}, just like the MeNet model, the PoseNet is made up by two components:
 \begin{itemize}
     \item feature extraction through a sequence of convolutional layers. This component has been named internally also as \emph{backend};
     \item pose regression on the extracted features using linear layers.
 \end{itemize}
-This model architecture is actually pretty convenient, since it can use pre-trained deep convolutional models, through the transfer learning approach. In most of the cases, this kind of models are trained on the ImageNet dataset \cite{imagenet}, which counts almost 3.2 million real-world images. Some examples of SOTA backend models that have been considered are: GoogLeNet~\cite{googlenet}, ResNet~\cite{resnet}, and EfficientNet-B7~\cite{efficientnet}. \Cref{tab:backend-performance-imagenet} shows the accuracy over the k=(1, 5) top predictions for the used backends on the ImageNet dataset.
+
+\begin{figure}[htbp]
+    \begin{center}
+        \includegraphics[width=0.32\textwidth]{./imgs/mapnet_posenet_structure.png}
+    \end{center}
+    \caption{PoseNet and MapNet model architecture.}
+    \label{fig:mapnet-posenet-structure}
+\end{figure}
+
+This model architecture is actually pretty convenient, since it can use pre-trained deep convolutional networks, through the transfer learning approach. In most of the cases, this kind of models are trained on the ImageNet dataset \cite{imagenet}, which counts almost 3.2 million real-world images: this offer good generalization capabilities for the feature extraction task.
+It is important to notice that these models have been developed to work on ImageNet images, which are RGB 224x224 pixels: for this reason, any PoseNet input must have the same shape. 
+Some examples of state-of-the-art backend models that have been considered are: GoogLeNet~\cite{googlenet}, ResNet~\cite{resnet}, and EfficientNet-B7~\cite{efficientnet}. \Cref{tab:backend-performance-imagenet} shows the accuracy over the k=(1, 5) top predictions for the used backends on the ImageNet dataset.
 
 \begin{table}[htbp]
     \caption{Backends performance in ImageNet}
@@ -54,19 +65,25 @@ This model architecture is actually pretty convenient, since it can use pre-trai
     \end{center}
 \end{table}
 
-Since ImageNet pre-trained models are used for classification purposes, we can just remove the last layers, and use only the feature extraction-related ones. In this way we are introducing in the PoseNet a feature extraction mechanism on real-world images with minimum effort: training by scratch these models would require a huge amount of computational power.
+Since ImageNet pre-trained models are used for classification purposes, we need to remove the last classification-related layers, and use only the convolutional ones for feature extraction. This gives us the opportunity to insert in the PoseNet a feature extraction mechanism on real-world images with minimum effort: training by scratch such models would require a huge amount of computational power.
 
-Also in this model we adopt the weighted loss described in \cref{eq:menet-loss}, also used in the MeNet model.
+Moreover, to train the PoseNet we adopt the weighted loss described in \cref{eq:menet-loss}, also used in the MeNet model.
 
 \subsection{MapNet}
-The MapNet model for APE represents an evolution of the PoseNet model: in fact, the model architecture remains actually the same. On the contrary, the main difference between the PoseNet is the loss function used to train the model. In this case, the errors in the prediction of absolute poses are not the only ones which are penalized: also errors in the relative poses are taken in consideration.
+The MapNet model for APE represents an evolution of the PoseNet model: in fact, the model architecture remains actually the same, as shown in \cref{fig:mapnet-posenet-structure}. While even in this case the original model has a single linear layer, we introduce a sequence of them, each followed by the RELU activation function. This enables the model to learn more complex scenarios fitting better the data distribution.
 
-The size of the last linear block depends on the dimension of the map that we would like to introduce.
+Another difference with respect to the PoseNet is the loss function used to train the model. In this case, the errors in the prediction of absolute poses are not the only ones which are penalized: in fact, also errors in the relative poses are taken in consideration. To be able to penalize also relative errors, during the training process the model receives as input a batch of \texttt{step} ($s$) sorted frames, that are separated by \texttt{skip} ($k$) frames in the original video.
 
-\begin{figure}[h]
-    \begin{center}
-        \includegraphics[width=0.32\textwidth]{./imgs/mapnet_posenet_structure.png}
-    \end{center}
-    \caption{The architecture of the PoseNet and MapNet models.}
-    \label{fig:mapnet-posenet-structure}
-\end{figure}
+\begin{multline}
+    L_\mathcal{D}(\Theta) = \sum\limits_{i=1}^{|\mathcal{D}|} h([\hat{P}^i \hat{Q}^i], [P^i Q^i])\\
+    + \alpha\sum\limits_{i,j=1, i\neq j}^{|\mathcal{D}|} h([\hat{P}^{ij} \hat{Q}^{ij}], [P^{ij} Q^{ij}])
+    \label{eq:mapnet-loss}
+\end{multline}
+where $[P^{ij} Q^{ij}]$ is the relative camera pose between pose predictions $[P^i Q^i]$ and $[P^j Q^j]$ for images $I^i$ and $I^j$.
+$h(\cdot)$ is a function to measure the distance between the predicted camera pose $p$ and the ground truth camera pose $p^*$, defined as:
+\begin{multline}
+    h([\hat{P}^i \hat{Q}^i], [P^i Q^i]) = \norm{\hat{P}^i-P^i}_1 e^{-\beta} + \beta\\
+    + \norm{\hat{Q}^i-Q^i}_1 e^{-\gamma} + \gamma
+    \label{eq:mapnet-loss-h}
+\end{multline}
+where $\beta$ and $\gamma$ are the weights that balance the translation loss and rotation loss. Both the parameters can be learned as well during the training procedure. $(I^i, I^j)$ are image pairs within each tuple of $s$ images sampled with a gap of $k$ frames from $\mathcal{D}$.
