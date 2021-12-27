@@ -44,5 +44,6 @@ mach-nix.nixpkgs.mkShell {
   ];
   shellHook = ''
     export PATH=$PATH:$(pwd)/camera-pose-estimation/tools
+    export LD_PRELOAD="/run/opengl-driver/lib/libcuda.so"
   '';
 }
