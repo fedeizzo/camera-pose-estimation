@@ -3,6 +3,8 @@ This repo contains some implementations of relative and absolute camera pose est
 
 ![Introduction example](./docs/imgs/introduction_example.png)
 
+Full documentation can be found in file [main.pdf](./docs/main.pdf)
+
 ## Absolute pose estimation models
 Currently absolute pose estimation models are:
 
@@ -52,7 +54,7 @@ batch_size = 128
 # available losses: mse, L1Loss, SmoothL1Loss, weighted
 type = "L1Loss"
 # weights used only with weighted loss
-weights = [1, 1, 1, 0.1, 0.1, 0.1, 0.1]
+weights = [1, 1, 1, 1, 1, 1, 1]
 
 [optimizer]
 name = "SGD"
@@ -78,6 +80,118 @@ test_dataset = "path"
 images = "path"
 net_weights_dir = "path"
 aim_dir = "path"
+```
+
+*Test*
+```toml
+[environment]
+# experiment and run names used during train phase
+# in this way the script will load the train config file
+experiment_name = "posenet"
+run_name = "resnet152"
+
+[dataloader]
+# save preprocessed dataset according to data folder structure.
+# This reduces the dataset loading time on each run
+save_processed_dataset = true
+
+[paths]
+# datasets can be a csv file (in this case it is computed a slow preprocessing)
+# or a folder in which a preprocessed dataset is saved (faster loading)
+# example:
+#    test_dataset = "/path/to/test.csv"
+# or
+#    test_dataset = "/path/to/data/my_dataset/processed_dataset/test"
+test_dataset = "path"
+# targets and predictions are csv files where targets and predictions is saved
+targets = "path"
+predictions = "path"
+# images and net_weights_dir are directories
+images = "path"
+net_weights_dir = "path"
+```
+
+### PoseNet
+In order to run PoseNet it is required to create a config files:
+- [train](./camera-pose-estimation/model/mapnet_train.ini.sample)
+- [test](./camera-pose-estimation/model/mapnet_test.ini.sample)
+
+*Train*
+```bash
+python ./camera-pose-estimation/model/run.py --config ./camera-pose-estimation/model/mapnet_train.ini --train
+```
+
+*Test*
+```bash
+python ./camera-pose-estimation/model/run.py --config ./camera-pose-estimation/model/mapnet_test.ini --test
+```
+
+#### Config docs
+*Train*
+```toml
+[environment]
+# name of the experiment for net weights dir and aim
+experiment_name = "posenet"
+# name of the run for net weights dir and aim
+run_name = "resnet152_weighted_custom_2"
+seed = 0
+epochs = 50
+
+[model]
+name = "mapnet"
+feature_dimension = 2048
+dropout_rate = 0.5
+
+[dataloader]
+num_workers = 4
+batch_size = 64
+# value used for torchvision jitter transform
+color_jitter = 0.5
+# defines how many images are ingested by the relative pose criterion
+step = 5
+# defines the distance between two images ingested by the relative pose criterion
+skip = 5
+# save preprocessed dataset according to data folder structure.
+# This reduces the dataset loading time on each run
+save_processed_dataset = true
+
+# required only with 7scenes dataset
+# sequences = {"train": "seq-02", "validation": "seq-03"}
+
+[loss]
+# parameters of the custom mapnet criterion, please refer to the
+# full documentation pdf file in docs folder
+type = "mapnet_criterion"
+beta = 0
+gamma = -3.0
+learn_beta = true
+learn_gamma = true
+
+[optimizer]
+name = "SGD"
+lr = 0.05
+; decay = 0.0
+momentum = 0.9
+
+[scheduler]
+name = "StepLR"
+step_size = 60
+gamma = 0.5
+
+[paths]
+# datasets can be a csv file (in this case it is computed a slow preprocessing)
+# or a folder in which a preprocessed dataset is saved (faster loading)
+# example:
+#    test_dataset = "/path/to/test.csv"
+# or
+#    test_dataset = "/path/to/data/my_dataset/processed_dataset/test"
+train_dataset = "path"
+validation_dataset = "path"
+test_dataset = "path"
+# images, net_weights_dir and aim_dir are directories
+net_weights_dir = "path"
+aim_dir = "path"
+images = "path"
 ```
 
 *Test*
