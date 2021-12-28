@@ -26,23 +26,24 @@ let
       ./config_parser
     ];
   };
-  otherDeps = [
-    # dataset generation and exploration
-    pkgs.ffmpeg
-    pkgs.colmapWithCuda
-    pkgs.meshlab
-    pkgs.cloudcompare
-
-    # documentation generation
-    pkgs.texlive.combined.scheme-full
-  ];
   deps = {
-   python = pythonEnv;
-   otherDeps = otherDeps;
+    python = pythonEnv;
+    runtime = [
+      pkgs.ffmpeg
+      pkgs.colmapWithCuda
+    ];
+    docs = [
+      pkgs.texlive.combined.scheme-full
+    ];
+    devel = [
+      pkgs.meshlab
+      pkgs.cloudcompare
+    ];
   };
   requirements = {
     deps = deps;
     mach-nix = mach-nix;
+    pkgs = pkgs;
   };
 in
 requirements
