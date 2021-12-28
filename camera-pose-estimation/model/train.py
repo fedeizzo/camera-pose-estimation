@@ -16,7 +16,7 @@ def train_model(
     scheduler,
     num_epochs: int,
     aim_run: Run,
-    device: torch.device,
+    device: str,
 ) -> torch.nn.Module:
     best_model = model
     best_loss = np.Inf

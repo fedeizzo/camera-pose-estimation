@@ -6,6 +6,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 from datasets.absolute import qexp_map
 from models.mapnet import MapNet
+from models.menet import MeNet
 from typing import Tuple
 
 
@@ -59,31 +60,37 @@ def test_model(
         predictions.append(model(x))
         targets.append(y)
 
-    predictions = torch.cat(predictions)
-    targets = torch.cat(targets)
+    if isinstance(model, MeNet):
+        predictions = pd.DataFrame(predictions[0].numpy(), columns=['tx', 'ty', 'tz', 'qw', 'qx', 'qy', 'qz'])
+        predictions = from_relative_to_absolute_pose(predictions)
+        targets = pd.DataFrame(targets[0].numpy(), columns=['tx', 'ty', 'tz', 'qw', 'qx', 'qy', 'qz'])
+        targets = from_relative_to_absolute_pose(targets)
+    else:
+        predictions = torch.cat(predictions)
+        targets = torch.cat(targets)
 
-    predictions = predictions.squeeze(dim=1)
+        predictions = predictions.squeeze(dim=1)
 
-    predictions = predictions.detach().cpu().numpy()
-    targets = targets.detach().cpu().numpy()
+        predictions = predictions.detach().cpu().numpy()
+        targets = targets.detach().cpu().numpy()
 
-    if predictions.shape[-1] == 6:
-        predictions_quat = np.apply_along_axis(qexp_map, 1, predictions[:, 3:])
-        predictions_xyz = predictions[:, :3]
-        targets_quat = np.apply_along_axis(qexp_map, 1, targets[:, 3:])
-        targets_xyz = targets[:, :3]
+        if predictions.shape[-1] == 6:
+            predictions_quat = np.apply_along_axis(qexp_map, 1, predictions[:, 3:])
+            predictions_xyz = predictions[:, :3]
+            targets_quat = np.apply_along_axis(qexp_map, 1, targets[:, 3:])
+            targets_xyz = targets[:, :3]
 
-        predictions = np.concatenate([predictions_xyz, predictions_quat], axis=1)
-        targets = np.concatenate([targets_xyz, targets_quat], axis=1)
+            predictions = np.concatenate([predictions_xyz, predictions_quat], axis=1)
+            targets = np.concatenate([targets_xyz, targets_quat], axis=1)
 
-    predictions = pd.DataFrame(
-        predictions,
-        columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
-    )
+        predictions = pd.DataFrame(
+            predictions,
+            columns=["tx", "ty", "tz", "qw", "qx", "qy", "qz"],
+        )
 
-    targets = pd.DataFrame(
-        targets,
-        columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
-    )
+        targets = pd.DataFrame(
+            targets,
+            columns=["tx", "ty", "tz", "qw", "qx", "qy", "qz"],
+        )
 
     return targets, predictions

@@ -1,10 +1,20 @@
 import torch
 import pandas as pd
 
-from .dataset import get_image_trasform, load_images
+from torchvision import transforms as T
+from .dataset import load_images
 from typing import Tuple
 from torch.utils.data import Dataset
 
+def get_image_transform() -> T.Compose:
+    return T.Compose(
+        [
+            T.Resize(224),
+            T.CenterCrop(224),
+            T.ToTensor(),
+            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
 
 def get_relative_sample_from_row(df_row) -> Tuple[list, torch.Tensor]:
     """
@@ -31,15 +41,13 @@ class RelativePoseDataset(Dataset):
         self,
         dataset_path: str,
         image_folder: str,
-        device,
-        transforms=None,
+        save_processed_dataset: bool = False,
     ) -> None:
         self.X = []
         self.Y = []
         df = pd.read_csv(dataset_path)
 
-        if transforms is None:
-            transforms = get_image_trasform()
+        transforms = get_image_transform()
 
         if isinstance(df, pd.DataFrame):
             self.original_df = df.copy(deep=True)
@@ -58,11 +66,10 @@ class RelativePoseDataset(Dataset):
         self.X = self.X
         self.Y = torch.stack(self.Y)
         self.images = images
-        self.device = device
 
     def __getitem__(self, idxs):
         X = [self.images[self.X[idxs][0]], self.images[self.X[idxs][1]]]
-        return torch.cat(X, 0).to(self.device), self.Y[idxs].to(self.device)
+        return torch.cat(X, 0), self.Y[idxs]
 
     def __len__(self):
         return len(self.X)

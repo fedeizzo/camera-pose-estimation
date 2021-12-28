@@ -242,6 +242,27 @@ Currently available relative pose estimation models are:
 
 - MeNet
 
+### MeNet
+In order to run PoseNet it is required to create a config files:
+- [train](./camera-pose-estimation/model/menet_train.ini.sample)
+- [test](./camera-pose-estimation/model/menet_test.ini.sample)
+
+*Train*
+```bash
+python ./camera-pose-estimation/model/run.py --config ./camera-pose-estimation/model/menet_train.ini --train
+```
+
+*Test*
+```bash
+python ./camera-pose-estimation/model/run.py --config ./camera-pose-estimation/model/menet_test.ini --test
+```
+#### Config docs
+*Train*
+Same of PoseNet.
+
+*Test*
+Same of PoseNet.
+
 ## Inference
 Inference can be used to make the model compute predictions. This mode is particularly useful for deploying the model in the web-server.
 

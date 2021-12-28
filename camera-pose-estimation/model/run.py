@@ -110,17 +110,25 @@ def get_dataloader(
             dataset_path=PosixPath(dataset_path),
             seq=config_dataloader["sequences"][phase],
         )
-    elif dataset_type == MapNetDataset and phase == "test" and "images" in config_paths:
+    elif (
+        dataset_type == MapNetDataset
+        and phase == "test"
+        and "images" in config_paths
+    ):
         dataset = AbsolutePoseDataset(
             dataset_path=PosixPath(dataset_path),
             image_folder=PosixPath(config_paths["images"]),
-            save_processed_dataset=config_paths.get("save_processed_dataset", False),
+            save_processed_dataset=config_paths.get(
+                "save_processed_dataset", False
+            ),
         )
     else:
         dataset = dataset_type(
             dataset_path=PosixPath(dataset_path),
             image_folder=PosixPath(config_paths["images"]),
-            save_processed_dataset=config_paths.get("save_processed_dataset", False),
+            save_processed_dataset=config_paths.get(
+                "save_processed_dataset", False
+            ),
         )
 
     return DataLoader(
@@ -174,7 +182,9 @@ def get_optimizer(config_optimizer: dict, paramters) -> torch.optim.Optimizer:
     return optimizer
 
 
-def get_scheduler(config_scheduler: dict, optimizer: torch.optim.Optimizer) -> Any:
+def get_scheduler(
+    config_scheduler: dict, optimizer: torch.optim.Optimizer
+) -> Any:
     if config_scheduler["name"] == "StepLR":
         scheduler = lr_scheduler.StepLR(
             optimizer,
@@ -204,7 +214,9 @@ def train(config_path: str):
     aim_run[...] = config.get_config()
     save_config_ro(
         config_path,
-        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini"),
+        os.path.join(
+            experiment_dir, config["environment"]["run_name"] + "_config.ini"
+        ),
     )
 
     train_dataset_path = config["paths"]["train_dataset"]
@@ -252,7 +264,7 @@ def train(config_path: str):
         scheduler,
         config["environment"]["epochs"],
         aim_run,
-        device,
+        "cuda" if torch.cuda.is_available() else "cpu",
     ).cpu()
     net_weights_path = os.path.join(
         experiment_dir,
@@ -269,7 +281,9 @@ def test(config_path: str):
         config["environment"]["experiment_name"],
     )
     train_configs = ConfigParser(
-        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini")
+        os.path.join(
+            experiment_dir, config["environment"]["run_name"] + "_config.ini"
+        )
     )
     set_random_seed(train_configs["environment"]["seed"])
 
@@ -313,7 +327,9 @@ def inference(config_path="./inference.ini", image: Image = None):
         config["environment"]["experiment_name"],
     )
     train_configs = ConfigParser(
-        os.path.join(experiment_dir, config["environment"]["run_name"] + "_config.ini")
+        os.path.join(
+            experiment_dir, config["environment"]["run_name"] + "_config.ini"
+        )
     )
     set_random_seed(train_configs["environment"]["seed"])
 
@@ -332,7 +348,7 @@ def inference(config_path="./inference.ini", image: Image = None):
     rotation_matrix = config["image_processing"]["rotation_matrix"]
     translation_vector = config["image_processing"]["translation_vector"]
 
-    if image is not None:
+    if image is not None and not isinstance(model, MeNet):
         transformers = get_image_transform()
         img = transformers(image).unsqueeze(0).unsqueeze(0).to(device)
         prediction = model(img)
@@ -351,12 +367,18 @@ def inference(config_path="./inference.ini", image: Image = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Base model")
-    parser.add_argument("-c", "--config", type=str, required=True, help="Config file")
-    parser.add_argument("-t", "--train", action="store_true", help="Train model flag")
+    parser.add_argument(
+        "-c", "--config", type=str, required=True, help="Config file"
+    )
+    parser.add_argument(
+        "-t", "--train", action="store_true", help="Train model flag"
+    )
     parser.add_argument(
         "-i", "--inference", action="store_true", help="Inference model flag"
     )
-    parser.add_argument("-e", "--test", action="store_true", help="Test model flag")
+    parser.add_argument(
+        "-e", "--test", action="store_true", help="Test model flag"
+    )
 
     args = parser.parse_args()
     config_path = args.config
