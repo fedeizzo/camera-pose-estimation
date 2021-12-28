@@ -10,7 +10,7 @@ Finally, we:
 
 ![Introduction example](./docs/imgs/introduction_example.png)
 
-The project [report](./docs/main.pdf) with some additional implementation details is available in the [docs folder](./docs/).
+The project [report](./docs/report/main.pdf) with some additional implementation details is available in the [docs folder](./docs/).
 
 ## How to use
 The steps required to use this repo are:
@@ -20,7 +20,7 @@ The steps required to use this repo are:
 3. create a train config file for absolute or relative model according to next sections (if absolute split was made an absolute model should be used, same for relative);
 3. create a test config file for absolute or relative model according to next sections (if absolute train was made an absolute test should be used, same for relative);
 4. create an inference config for the dataset: all steps to align CRSs and scale dataset must be done by hand. The procedure used for Povo 1 Second floor can be found in [notebooks folder](./notebooks);
-5. launch the dashboard to deploy the model. At the moment the dashboard will serve the cadatastral plan of Povo 1 Second floor. Some changes in the code are required for a different dataset.
+5. launch the dashboard to deploy the model. At the moment the dashboard will serve the cadastral plan of Povo 1 Second floor. Some changes in the code are required for a different dataset.
 
 ## Absolute pose estimation models
 Currently available absolute pose estimation models are:
@@ -264,9 +264,9 @@ Same of PoseNet.
 Same of PoseNet.
 
 ## Inference
-Inference can be used to make the model compute predictions. This mode is particularly useful for deploying the model in the web-server.
+The inference procedure can be used to make the model compute predictions. This mode is particularly useful for deploying the model in the web-server.
 
-This configuration sample containts many hardcoded constants that have been computed for Povo 1 Second floor dataset.
+This configuration sample contains many hard-coded constants that have been computed for Povo 1 Second floor dataset.
 Note that it is required to compute them for every new dataset: unfortunately there is no automatic script to do it yet.
 For calculating these constants on new datasets, you can refer to the [CRS alignment notebook](./notebooks/crs_alignment.ipynb).
 
@@ -300,12 +300,12 @@ net_weights_dir = "path"
 ```
 
 ## Dataset
-Datasets are created using [Colmap](https://colmap.github.io/), which is a tool that allows to build a 3D point cloud reconstruction model of an environment by using photos of it. During the reconstruction process, it also computes camera poses in an arbitrary reference system.
+Datasets are created using [COLMAP](https://colmap.github.io/), which is a tool that allows to build a 3D point cloud reconstruction model of an environment by using photos of it. During the reconstruction process, it also computes camera poses in an arbitrary reference system.
 
-Even if the positions computed by Colmap are well accurate most of the times, the process is very demanding in terms of time and resources.
+Even if the positions computed by COLMAP are well accurate most of the time, the process is very demanding in terms of time and resources.
 
 ### Video to dataset
-The script [video to dataset](./camera-pose-estimation/tools/video_to_dataset.sh) takes a video and splits it into multiple images that are used to compute a sparse or dense model using Colmap. Once the reconstruction is done, the script extract poses of the cameras.
+The script [video to dataset](./camera-pose-estimation/tools/video_to_dataset.sh) takes a video and splits it into multiple images that are used to compute a sparse or dense model using COLMAP. Once the reconstruction is done, the script extract poses of the cameras.
 ```bash
 usage: video_to_dataset.sh [-h] -v VIDEO -o OUTPUT_PATH [-f FRAMES] [-c CAMERA_REFENCE_PATH]
                            [-n NUM_THREADS] [-q {low,medium,high,extreme}] [-t {sparse,dense}]
@@ -330,7 +330,7 @@ optional arguments:
 ```
 
 ### Cross validation split
-Scripts [split abasolute dataset](./camera-pose-estimation/tools/split_absolute_dataset.sh) and [split relative dataset](./camera-pose-estimation/tools/split_relative_dataset.sh) split dataset into train, validation and test files given a folder created with the video to dataset script.
+Scripts [split absolute dataset](./camera-pose-estimation/tools/split_absolute_dataset.sh) and [split relative dataset](./camera-pose-estimation/tools/split_relative_dataset.sh) split dataset into train, validation and test files given a folder created with the video to dataset script.
 
 ```bash
 usage: split_absolute_dataset.sh [-h] -i INPUT_PATH [-n] [-t TRAIN_SPLIT] [-v VALIDATION_SPLIT]
@@ -353,7 +353,7 @@ optional arguments:
 ```
 
 ### Data folder structure
-Given a video, the final folder specificied by `OUTPUT_PATH` should present the following structure:
+Given a video, the final folder specified by `OUTPUT_PATH` should present the following structure:
 ```bash
  .
 ├──  imgs
@@ -386,14 +386,14 @@ Given a video, the final folder specificied by `OUTPUT_PATH` should present the 
 ```
 Where:
 - `imgs` folder contains all frames;
-- `processed_dataset` folder contains the dataset processed with the absolute pose dataset (this are actually generated during the first training and testing procedure: see model section for more information);
-- `workspace/` contains cloud point models created by Colmap;
-- `points3D.csv` contains all features extracted by Colmap;
-- `positions.csv` contains all camera poses extracted by Colmap;
+- `processed_dataset` folder contains the dataset processed with the absolute pose dataset (these are actually generated during the first training and testing procedure: see model section for more information);
+- `workspace/` contains cloud point models created by COLMAP;
+- `points3D.csv` contains all features extracted by COLMAP;
+- `positions.csv` contains all camera poses extracted by COLMAP;
 - `train.csv`, `validation.csv` and `test.csv` are files created with the split scripts.
 
 ## Dashboard
-The dashboard is built with `FastAPI`, and it allows users to interct with the final model through a web-based *Bootstrap* dashboard. The dashboard can show the model predictions in three different ways:
+The dashboard is built with `FastAPI`, and it allows users to interact with the final model through a web-based *Bootstrap* dashboard. The dashboard can show the model predictions in three different ways:
 
 * raw model output displayed through an alert;
 * raw model output shown in the floor map;
@@ -401,7 +401,7 @@ The dashboard is built with `FastAPI`, and it allows users to interct with the f
 
 ![dashboard](./docs/imgs/dashboard.png)
 
-*Launch the webserver and dashboard*
+*Launch the web-server and dashboard*
 ```bash
 cd camera-pose-estimation/model
 uvicorn webserver:app
