@@ -1,14 +1,14 @@
 \section{Results}
 
 \subsection{Dataset}
-To test the already discussed data generation pipeline and deep learning models, we try to map the second floor of the Povo 1 building in the University of Trento.
-We filmed a single vertical video with a smartphone (model: OPPO reno 4 CPH2091) at 2160x3840px 30fps of the entire floor, avoiding moving objects and people. The frames have been extracted at 10fps, resulting in 1462 images for a total of 13.1 GB. COLMAP has been used to generate a sparse reconstruction map using the Poisson mesher, high quality, shared intrinsics, and simple\_radial camera model.
-Due to COLMAP limitations, different runs have been necessary, since the final reconstruction was not good enough, especially in terms of closed-loop detection: \cref{fig:trajectory-colmap} shows the best achieved result that has been used.
+To test the already discussed data generation pipeline and deep learning models, we mapped the second floor of the Povo 1 building in the University of Trento.
+We filmed a single vertical video with a smartphone (model: OPPO reno 4 CPH2091) at 2160x3840 pixels 30fps of the entire floor, avoiding moving objects and people. The frames have been extracted at 10fps, resulting in 1462 images for a total of 13.1 GB. COLMAP has been used to generate a sparse reconstruction map using the Poisson mesher, high quality, shared intrinsics, and simple\_radial camera model.
+Due to COLMAP limitations, different runs were necessary, since the final reconstruction was not good enough, especially in terms of closed-loop detection: \cref{fig:trajectory-colmap} shows the best result that has been achieved.
 
-Due to the models' backend implementation, input images of the model should be 224x224: for this reason, resizing and center cropping has been adopted. The final size of the processed dataset is 880.3 MB. Train, validation, and test datasets have equal size and have been generated using the $\mod{3}$ operation on the frame index: in this way, adjacent frames are included in different datasets.
+Due to the models' backend implementation, input images of the model should be 224x224 pixels: for this reason, resizing and center cropping has been adopted. The final size of the processed dataset is 880.3 MB. Train, validation, and test datasets have equal size and have been generated according the $\mod{3}$ operation on the frame index: in this way, adjacent frames are included in different datasets.
 
 \subsection{PoseNet}
-Since several pre-trained models can be used as the PoseNet backend, in \cref{tab:mapnet-backends} we present a brief list of them with the respective mean absolute error in the test set: notice that all the PoseNets have been tested with a single final linear layer. Even if the overall trend is similar, it is possible to notice that ResNet-152 and EfficientNet-B7 obtain the best results: this is mainly due to the performance list showed on the ImageNet dataset in \cref{tab:backend-performance-imagenet}. In this case, it means that more parameters make the difference, but causes also drawbacks in model performances.
+Since several pre-trained models can be used as the PoseNet backend, in \cref{tab:mapnet-backends} we present a brief list of them with the respective mean absolute error in the test set: notice that all the PoseNets have been tested with a single final linear layer. Even if the overall trend is similar, it is possible to notice that in general bigger networks obtain better results: this is mainly due to the performance list showed on the ImageNet dataset in \cref{tab:backend-performance-imagenet}. In this case, it means that more parameters make the difference, but causes also drawbacks in model performances due to higher computational complexity.
 
 \begin{table}[htbp]
     \caption{PoseNet backend comparison}
@@ -17,19 +17,19 @@ Since several pre-trained models can be used as the PoseNet backend, in \cref{ta
             \toprule
             {Model}         & \thead{Position                                              \\error} & \thead{Rotation\\error} & \thead{Total\\parameters} & \thead{Trainable\\parameters} \\
             \midrule
-            GoogLeNet       & 0.781           & 0.119          & $\sim$ 7,000,000 & 3,591  \\
+            GoogLeNet       & 0.781           & \textbf{0.119} & $\sim$ 7,000,000 & 3,591  \\
             ResNet-18       & 0.635           & 0.288          & 11,180,103       & 3,591  \\
             ResNet-34       & 0.632           & 0.223          & 21,288,263       & 3,591  \\
             ResNet-50       & 0.707           & 0.191          & 23,522,375       & 14,343 \\
             ResNet-152      & \textbf{0.594}  & 0.139          & 58,158,151       & 14,343 \\
-            EfficientNet-B7 & 0.817           & \textbf{0.132} & 63,804,887       & 17,927 \\
+            EfficientNet-B7 & 0.817           & 0.132          & 63,804,887       & 17,927 \\
             \bottomrule
         \end{tabular}
         \label{tab:posenet-backends}
     \end{center}
 \end{table}
 
-In addition, trying to obtain the best results, different loss functions have been tested in the \cref{eq:menet-loss}. Note that in case of $\alpha \neq 1$ and MSE, the training loss is not tractable (goes to infinity).
+In addition, \cref{tab:posenet-losses} shows different loss functions that have been tested for the \cref{eq:menet-loss}. Note that in case of $\alpha \neq 1$ and MSE, the training loss is not tractable (goes to infinity).
 \begin{figure}[htbp]
     \begin{center}
         \includegraphics[width=0.4\textwidth]{./imgs/posenet_losses.png}
@@ -72,11 +72,11 @@ In addition, trying to obtain the best results, different loss functions have be
     \end{subfigure}
     \caption{Estimated trajectories.}
 \end{figure*}
-\Cref{fig:trajectory-posenet} show a visual representation of the model performances. It is easy to notice that even if the predictions are almost in the same map zone with respect to their ground truth, they are still pretty sparse. The mean error between prediction and target is $2000 cm$.
+Moreover, \cref{fig:trajectory-posenet} shows a visual representation of the model performances. It is easy to notice that even if the predictions are almost in the same map zone with respect to their ground truth, they are still pretty sparse. The mean error between prediction and target is $\sim 2000cm$.
 
 \subsection{MapNet}
-To prevent sparsification in the model outputs, we propose to use the MapNet~\cite{mapnet}. As for the PoseNet, also in this case several pre-trained models can be used as feature extractor: \cref{tab:mapnet-backends} shows some candidates, each one used with three final linear layers.
-In this case the overall trend is similar: this highlights that the extracted features are enough for the task independently of the backbone used. Another interesting difference with \cref{tab:posenet-backends} is the fact that models with more parameters are not the one performing better.
+To prevent sparsification in the model predictions, we propose to use the MapNet~\cite{mapnet}. As for the PoseNet, also in this case several pre-trained models can be used as feature extractor: \cref{tab:mapnet-backends} shows some candidates, each one used with three final linear layers.
+Also in this case the overall trend is similar: this highlights that the extracted features are good enough, independently of the used backbone. Another interesting difference with \cref{tab:posenet-backends} is the fact that models with more parameters are not necessarily the ones performing better.
 \begin{table}[htbp]
     \caption{MapNet backend comparison}
     \begin{center}
@@ -103,13 +103,13 @@ Following the example of \cref{fig:posenet-losses} for the PoseNet model, \cref{
     \begin{center}
         \includegraphics[width=0.4\textwidth]{./imgs/mapnet_losses.png}
     \end{center}
-    \caption{MapNet (ResNet-34) losses}
+    \caption{MapNet (ResNet-34) losses.}
     \label{fig:mapnet-losses}
 \end{figure}
 
-In this case, as can be seen in \cref{fig:trajectory-mapnet}, the custom MapNet predictions follow more closely the ground truth path with respect to the ones described by the PoseNet in \cref{fig:trajectory-posenet}.
+Moreover, as can be seen in \cref{fig:trajectory-mapnet}, the custom MapNet predictions follow more closely the ground truth path with respect to the ones described by the PoseNet in \cref{fig:trajectory-posenet}.
 
-Since this approach has been shown to still include some imperfections, we have also included a post-processing algorithm which tries to correct the model prediction. To be more specific, if the model prediction is not in a walkable spot in the map, then the output is going to be the nearest walkable point on the map according to the Euclidean distance criterion. The post-processing procedure allows to reduce the mean absolute error between predictions and targets from $153 cm$ to $130 cm$: the results can be viewed in \cref{fig:trajectory-mapnet-walkable}.
+Since this approach has been shown to still include some imperfections, we have also included a post-processing algorithm which tries to correct the model predictions. To be more specific, if the model prediction is not in a walkable spot in the map, then the output is going to be the nearest walkable point on the map according to the Euclidean distance criterion. The post-processing procedure allows to reduce the mean absolute error between predictions and targets from $153 cm$ to $130 cm$: the results can be viewed in \cref{fig:trajectory-mapnet-walkable}.
 
 \subsection{Dashboard}
 To be able to deploy the model, a web-server has been developed with FastAPI: this interface aims to easily allow users to interact with the final model through a web-based Bootstrap dashboard.
@@ -119,7 +119,7 @@ The dashboard can show the model predictions in three different ways:
     \item raw model output shown in the floor map;
     \item post-processed model output in a walkable zone in the floor map.
 \end{itemize}
-\Cref{fig:dashboard} presents the \textit{UI} for showing post-precessed model outputs: red zones are not walkable areas.
+\Cref{fig:dashboard} presents the \emph{UI} for showing post-precessed model predictions: red zones are non-walkable areas.
 \begin{figure*}[htbp]
     \begin{subfigure}[b]{0.542\textwidth}
         \includegraphics[width=1\textwidth]{./imgs/dashboard.png}
@@ -132,5 +132,5 @@ The dashboard can show the model predictions in three different ways:
         \caption{Predictions post-processed on walkable areas.}
         \label{fig:trajectory-mapnet-walkable}
     \end{subfigure}
-    \caption{Non walkable area maps.}
+    \caption{Non-walkable area maps.}
 \end{figure*}

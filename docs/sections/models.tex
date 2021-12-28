@@ -7,9 +7,9 @@ In particular, we present:
 \end{itemize}
 
 \subsection{MeNet}
-The first model we would like to analyze is the MeNet model, that is specifically targeted for RPE.
+The first model we would like to discuss is the MeNet model, that is specifically targeted for RPE.
 The input of the network consists in a stack of two images: the goal is to estimate the relative pose of the second image with respect to the first one.
-As shown in \cref{fig:menet-structure}, the MeNet is composed by nine deep convolutional layers followed by a pair of linear layers. While the first part of the network covers the role of feature extraction, the last layers are used to combine the extracted features.
+As shown in \cref{fig:menet-structure}, the MeNet is composed by nine deep convolutional layers followed by a sequence of linear layers. While the first part of the network covers the role of feature extraction, the last layers are used to combine the extracted features.
 \begin{figure}[htbp]
     \begin{center}
         \includegraphics[width=0.32\textwidth]{./imgs/menet_structure.png}
@@ -26,8 +26,8 @@ In order to train the model, we use a loss function that consists in the weighte
 where $P$, $\hat{P}$, $Q$, $\hat{Q}$, and $\alpha$ are the ground truth position vector, the estimated position vector, the ground truth quaternions, the estimated quaternions, and the weight for balancing the displacement error and the rotation angle error.
 
 \subsection{PoseNet}
-Since the results given by RPE deep learning solutions are not very promising due to the lack of generalization and cumulative errors, from now on we are going to consider models strictly developed for APE.
-In this sense, the first model we present is the PoseNet model~\cite{9348762}.
+Since the results given by RPE deep learning solutions are not very promising due to the lack of generalization and to cumulative errors in the estimations, from now on we are going to consider only models strictly developed for APE.
+In this sense, the first one we present is the PoseNet model~\cite{9348762}.
 As shown in \cref{fig:mapnet-posenet-structure}, just like the MeNet model, the PoseNet is made up by two components:
 \begin{itemize}
     \item feature extraction through a sequence of convolutional layers. This component has been named internally also as \emph{backend};
@@ -43,7 +43,7 @@ As shown in \cref{fig:mapnet-posenet-structure}, just like the MeNet model, the 
 \end{figure}
 
 This model architecture is actually pretty convenient, since it can use pre-trained deep convolutional networks, through the transfer learning approach. In most of the cases, this kind of models are trained on the ImageNet dataset \cite{imagenet}, which counts almost 3.2 million real-world images: this offer good generalization capabilities for the feature extraction task.
-It is important to notice that these models have been developed to work on ImageNet images, which are RGB 224x224 pixels: for this reason, any PoseNet input must have the same shape. 
+It is important to notice that these models have been developed to work on the ImageNet dataset, which consists of RGB 224x224 pixels images: for this reason, any PoseNet input must have the same shape. 
 Some examples of state-of-the-art backend models that have been considered are: GoogLeNet~\cite{googlenet}, ResNet~\cite{resnet}, and EfficientNet-B7~\cite{efficientnet}. \Cref{tab:backend-performance-imagenet} shows the accuracy over the k=(1, 5) top predictions for the used backends on the ImageNet dataset.
 
 \begin{table}[htbp]
@@ -72,7 +72,8 @@ Moreover, to train the PoseNet we adopt the weighted loss described in \cref{eq:
 \subsection{MapNet}
 The MapNet model for APE represents an evolution of the PoseNet model: in fact, the model architecture remains actually the same, as shown in \cref{fig:mapnet-posenet-structure}. While even in this case the original model has a single linear layer, we introduce a sequence of them, each followed by the RELU activation function. This enables the model to learn more complex scenarios fitting better the data distribution.
 
-Another difference with respect to the PoseNet is the loss function used to train the model. In this case, the errors in the prediction of absolute poses are not the only ones which are penalized: in fact, also errors in the relative poses are taken in consideration. To be able to penalize also relative errors, during the training process the model receives as input a batch of \texttt{step} ($s$) sorted frames, that are separated by \texttt{skip} ($k$) frames in the original video.
+Another difference with respect to the PoseNet is the loss function used to train the model. In this case, the errors on the prediction of absolute poses are not the only ones which are penalized: in fact, also errors in the relative poses are taken in consideration. To be able to penalize also relative errors, during the training process the model receives as input a batch of \texttt{step} ($s$) sorted frames, that are separated by \texttt{skip} ($k$) frames in the original video.
+\Cref{eq:mapnet-loss} describes the MapNet loss as a mixture of absolute and relative errors regularized by the $\alpha$ hyperparameter: 
 
 \small
 \begin{equation}
@@ -81,11 +82,11 @@ Another difference with respect to the PoseNet is the loss function used to trai
 \end{equation}
 \normalsize
 where $[P^{ij} Q^{ij}]$ is the relative camera pose between pose predictions $[P^i Q^i]$ and $[P^j Q^j]$ for images $I^i$ and $I^j$.
-$h(\cdot)$ is a function to measure the distance between the predicted camera pose $p$ and the ground truth camera pose $p^*$, defined as:
+$h(\cdot)$ is a function to measure the distance between the predicted camera pose $\hat{P}$ and the ground truth camera pose $P$, defined as:
 \small
 \begin{equation}
     h([\hat{P}^i \hat{Q}^i], [P^i Q^i]) = \norm{\hat{P}^i-P^i}_1 e^{-\beta} + \beta + \norm{\hat{Q}^i-Q^i}_1 e^{-\gamma} + \gamma
     \label{eq:mapnet-loss-h}
 \end{equation}
 \normalsize
-where $\beta$ and $\gamma$ are the weights that balance the translation loss and rotation loss. Both the parameters can be learned as well during the training procedure. $(I^i, I^j)$ are image pairs within each tuple of $s$ images sampled with a gap of $k$ frames from $\mathcal{D}$.
+where $\beta$ and $\gamma$ are the weights that balance the position loss and rotation loss. Both the parameters can be learned as well during the training procedure. $(I^i, I^j)$ are image pairs within each tuple of $s$ images sampled with a gap of $k$ frames from $\mathcal{D}$.
