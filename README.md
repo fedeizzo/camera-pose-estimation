@@ -5,6 +5,16 @@ This repo contains some implementations of relative and absolute camera pose est
 
 Full documentation can be found in file [main.pdf](./docs/main.pdf)
 
+## How to use
+The steps required to use this repo are:
+
+1. use (video to dataset)[#video-to-dataset] procedure on a video to generate a labeled dataset;
+2. use (absolute or relative)[cross-validation-split] procedure to split dataset in train, validation and test;
+3. use train config for absolute or relative model according to next sections (if absolute split was made an absolute model should be used, same for relative);
+3. use test config for absolute or relative model according to next sections (if absolute train was made an absolute test should be used, same for relative);
+4. create inference config for the dataset: all steps to align CRSs and scale dataset must be done by hand. The procedure used for Povo 1 Second floor can be found in (notebooks folder)[./notebooks];
+5. launch the dashboard to serve the model, at the moment the dashboard will serve the cadatastral plan of Povo 1 Second floor. Some changes are required for a different dataset.
+
 ## Absolute pose estimation models
 Currently absolute pose estimation models are:
 
@@ -111,7 +121,7 @@ images = "path"
 net_weights_dir = "path"
 ```
 
-### PoseNet
+### MapNet
 In order to run PoseNet it is required to create a config files:
 - [train](./camera-pose-estimation/model/mapnet_train.ini.sample)
 - [test](./camera-pose-estimation/model/mapnet_test.ini.sample)
@@ -227,6 +237,42 @@ Currently relative pose estimation models are:
 
 - MeNet
 
+## Inference
+Inference can be used to compute predictions, it is also possible to combine the procedure with the dashboard
+```toml
+[environment]
+# experiment and run names used during train phase
+# in this way the script will load the train config file
+experiment_name = "name"
+run_name = "name"
+
+[image_processing]
+# unit_measure is the unit measure for the scaling factor in the dataset CRS.
+# It is required to compute it for every dataset,
+# now it is not present an automatic script to do it
+unit_measure = 4.22608635945641
+# pixels_amount is the unit measure for the scaling factor in the real world CRS.
+# Since the map of an environment is an image it is usefull to express it in pixel
+# It is required to compute it for every dataset,
+# now it is not present an automatic script to do it
+pixels_amount = 630
+# rotation_matrix and translation_vector required for the rigid tranform that
+# allows to align the dataset crs with the real world crs. Values below are for
+# Povo 1 Second floor
+rotation_matrix = [
+    [ 0.09043424,  0.21994528, -0.97131134],
+    [-0.99584784,  0.00975923, -0.09050882],
+    [-0.01042773,  0.97546339,  0.2199146 ]]
+translation_vector = [
+    [1080.31885417],
+    [ 652.52917988],
+    [  -1.84188703]]
+
+[paths]
+# net_weights_dir is a directorie
+net_weights_dir = "path"
+```
+
 ## Dataset
 Datasets are created using [Colmap](https://colmap.github.io/), this tool digests a video and compute the sparse and/or dense reconstruction of the environment. A intermediate step of this process is the camera pose estimation.
 
@@ -319,6 +365,21 @@ Given a video the folder specificied by `OUTPUT_PATH` will presents the followin
 - points3D.csv contains all features extracted by Colmap
 - positions.csv contains all camera poses extracted by Colmap
 - train.csv, validation.csv and test.csv are files created with the split scripts
+
+## Dashboard
+The dashboard is built with `FastAPI`, it allows users to interct with the final model through a web-based *Bootstrap* dashboard. The dashboard can show the model predictions in three different ways:
+
+* raw model output displayed through an alert;
+* raw model output shown in the floor map;
+* post-processed model output in a walkable zone in the floor map.
+
+![dashboard](./docs/imgs/dashboard.png)
+
+### Usage
+```bash
+cd camera-pose-estimation/model
+uvicorn webserver:app
+```
 
 ## Goal
 Given a set of videos sampled with a specific framerate is possible to generate labeled datasets that can be used to train a supervised model, once the training process for the model is completed it can be used as an effecient campera pose estimator.

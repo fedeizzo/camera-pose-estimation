@@ -1,0 +1,18 @@
+[environment]
+experiment_name = "name"
+run_name = "name"
+
+[image_processing]
+unit_measure = 4.22608635945641
+pixels_amount = 630
+rotation_matrix = [
+    [ 0.09043424,  0.21994528, -0.97131134],
+    [-0.99584784,  0.00975923, -0.09050882],
+    [-0.01042773,  0.97546339,  0.2199146 ]]
+translation_vector = [
+    [1080.31885417],
+    [ 652.52917988],
+    [  -1.84188703]]
+
+[paths]
+net_weights_dir = "path"
