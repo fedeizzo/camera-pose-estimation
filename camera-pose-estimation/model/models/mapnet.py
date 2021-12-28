@@ -41,6 +41,9 @@ class PoseNet(nn.Module):
                     nn.init.constant_(m.bias.data, 0)
 
     def forward(self, x):
+        """
+        Input shape should be [(Batch*Steps) x Channels x Width x Height]
+        """
         x = self.feature_extractor(x)
         x = F.relu(x)
         if self.dropout_rate > 0:
@@ -58,6 +61,9 @@ class MapNet(nn.Module):
         self.absolute_net = PoseNet(feature_dimension, dropout_rate)
 
     def forward(self, x):
+        """
+        Input shape should be [Batch x Steps x Channels x Width x Height]
+        """
         s = x.size()
         x = x.view(-1, *s[2:])
         poses = self.absolute_net(x)

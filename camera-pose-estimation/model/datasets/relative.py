@@ -7,6 +7,9 @@ from torch.utils.data import Dataset
 
 
 def get_relative_sample_from_row(df_row) -> Tuple[list, torch.Tensor]:
+    """
+    Extracts a sample from a dataset row
+    """
     x = [df_row.image_t, df_row.image_t1]
     y = torch.Tensor(
         [

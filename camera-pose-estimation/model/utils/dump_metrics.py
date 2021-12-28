@@ -8,6 +8,10 @@ from config_parser import ConfigParser
 def dump_metrics(
     config_path: str, experiment_name: str = None, run_name: str = None
 ) -> None:
+    """
+    Exrtacts aim logs containing losses and other tracked metrics. It is
+    possible to filter runs and experiments
+    """
     config = ConfigParser(config_path)
     repo = Repo(config["paths"]["aim_dir"])
 

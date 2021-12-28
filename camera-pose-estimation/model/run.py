@@ -2,13 +2,12 @@ import argparse
 import random
 import numpy as np
 import torch
-import pickle
 import os
 
 from config_parser import ConfigParser
 from torch.optim import lr_scheduler, SGD, Adam
 from torch.utils.data import Dataset, DataLoader
-from typing import Optional, Dict, Callable, Tuple, List, Any
+from typing import Dict, Tuple, List, Any
 from PIL import Image
 
 from datasets.absolute import (
@@ -25,9 +24,6 @@ from criterions.criterions import get_loss
 from train import train_model
 from test_model import (
     test_model,
-    reverse_normalization,
-    from_relative_to_absolute_pose,
-    compute_absolute_positions,
 )
 from utils.metrics import calculate_MAE_poses
 from aim import Run

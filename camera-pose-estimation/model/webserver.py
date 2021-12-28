@@ -28,6 +28,10 @@ app.add_middleware(
 
 
 def rigid_transform_3D(A, B) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Computes the rigid transform to align to Coordinate Reference
+    Systems based on two lists of points: A, B.
+    """
     assert A.shape == B.shape
 
     num_rows, num_cols = A.shape

@@ -52,6 +52,9 @@ def get_loss(config_loss: dict, device: torch.device) -> Any:
 
 
 def calc_vos_simple(poses) -> torch.Tensor:
+    """
+    Computes relative poses between a sequence of images
+    """
     vos = []
     for p in poses:
         pvos = [p[i + 1].unsqueeze(0) - p[i].unsqueeze(0) for i in range(len(p) - 1)]

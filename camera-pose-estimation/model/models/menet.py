@@ -52,6 +52,9 @@ class MeNet(nn.Module):
         )
 
     def forward(self, input):
+        """
+        Input shape should be [Batch x 2 x Channels x Width x Height]
+        """
         output = self.conv_encoder(input)
         output = output.view(-1, output.size()[1] * output.size()[2] * output.size()[3])
         output = self.linear_encoder(output)

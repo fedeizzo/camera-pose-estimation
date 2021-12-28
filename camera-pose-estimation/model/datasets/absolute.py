@@ -27,6 +27,9 @@ def get_image_transform() -> T.Compose:
 
 
 def get_absolute_sample_from_row(df_row) -> Tuple[str, torch.Tensor]:
+    """
+    Extracts a sample from a dataset row
+    """
     x = df_row.image
     y = torch.Tensor(
         [
@@ -44,6 +47,10 @@ def get_absolute_sample_from_row(df_row) -> Tuple[str, torch.Tensor]:
 
 
 def homogeneous_to_quaternion(matrix) -> np.ndarray:
+    """
+    Transform homogeneous matrix to a quaternion representation
+    (used only with 7scens dataset).
+    """
     q = np.empty((4,), dtype=float)
     M = np.array(matrix, dtype=float, copy=False)[:4, :4]
     t = np.trace(M)
