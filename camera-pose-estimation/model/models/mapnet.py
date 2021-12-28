@@ -17,12 +17,9 @@ class PoseNet(nn.Module):
         for param in self.feature_extractor.parameters():
             param.requires_grad = False
 
-        # self.feature_extractor.fc = nn.Linear(out_feature_extractor, feature_dimension)
         self.feature_extractor.fc = nn.Sequential(
             nn.Linear(out_feature_extractor, feature_dimension),
             nn.ReLU(),
-            # nn.Linear(feature_dimension, feature_dimension),
-            # nn.ReLU(),
             nn.Linear(feature_dimension, feature_dimension // 2),
             nn.ReLU(),
             nn.Linear(feature_dimension // 2, feature_dimension // 4),

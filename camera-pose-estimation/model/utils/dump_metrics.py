@@ -32,9 +32,11 @@ def dump_metrics(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Base model")
     parser.add_argument("-c", "--config", type=str, required=True, help="Config file")
-    parser.add_argument("-e", "--experiment_name", type=str, required=False, help="Experiment name")
+    parser.add_argument(
+        "-e", "--experiment_name", type=str, required=False, help="Experiment name"
+    )
     parser.add_argument("-r", "--run_name", type=str, required=False, help="Run name")
 
     args = parser.parse_args()
-    
+
     dump_metrics(args.config, args.experiment_name, args.run_name)

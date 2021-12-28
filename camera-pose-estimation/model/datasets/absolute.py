@@ -7,7 +7,7 @@ import os
 from pathlib import PosixPath
 from os import listdir
 from os.path import isfile
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from torch.utils.data import Dataset
 from torchvision import transforms as T
@@ -15,7 +15,7 @@ from PIL import Image
 from transforms3d.quaternions import quat2mat, qnorm, qeye
 
 
-def get_image_transform():
+def get_image_transform() -> T.Compose:
     return T.Compose(
         [
             T.Resize(224),
@@ -26,13 +26,9 @@ def get_image_transform():
     )
 
 
-def get_absolute_sample_from_row(df_row):
-    """
-    Helper function to retrieve one dataset sample from a single row of the pandas DataFrame
-    """
+def get_absolute_sample_from_row(df_row) -> Tuple[str, torch.Tensor]:
     x = df_row.image
     y = torch.Tensor(
-        # [df_row.tx, df_row.ty, df_row.tz, df_row.qx, df_row.qy, df_row.qz, df_row.qw,]
         [
             df_row.x,
             df_row.y,
@@ -47,7 +43,7 @@ def get_absolute_sample_from_row(df_row):
     return x, y
 
 
-def homogeneous_to_quaternion(matrix):
+def homogeneous_to_quaternion(matrix) -> np.ndarray:
     q = np.empty((4,), dtype=float)
     M = np.array(matrix, dtype=float, copy=False)[:4, :4]
     t = np.trace(M)
@@ -71,7 +67,7 @@ def homogeneous_to_quaternion(matrix):
     return q
 
 
-def qlog(q: np.ndarray):
+def qlog(q: np.ndarray) -> np.ndarray:
     q = np.array(q)  # To ensure there is a dtype
     qnorm_ = qnorm(q)
     if qnorm_ == 0.0:
@@ -89,12 +85,7 @@ def qlog(q: np.ndarray):
     return result
 
 
-def qlog_map(q):
-    """
-    Applies logarithm map to q
-    :param q: (4,)
-    :return: (3,)
-    """
+def qlog_map(q) -> np.ndarray:
     if all(q[1:] == 0):
         q = np.zeros(3)
     else:
@@ -102,12 +93,7 @@ def qlog_map(q):
     return q
 
 
-def qexp_map(q):
-    """
-    Applies the exponential map to q
-    :param q: (3,)
-    :return: (4,)
-    """
+def qexp_map(q) -> np.ndarray:
     n = np.linalg.norm(q)
     q = np.hstack((np.cos(n), np.sinc(n / np.pi) * q))
     return q

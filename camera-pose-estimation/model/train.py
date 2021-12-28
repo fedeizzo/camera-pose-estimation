@@ -50,7 +50,10 @@ def train_model(
                 epoch_loss /= len(dataloader)
                 phases_loss[phase] = epoch_loss
                 aim_run.track(
-                    epoch_loss, name="loss", epoch=epoch, context={"subset": phase}
+                    epoch_loss,
+                    name="loss",
+                    epoch=epoch,
+                    context={"subset": phase},
                 )
                 aim_run.track(scheduler.get_last_lr(), name="lr", epoch=epoch)
 

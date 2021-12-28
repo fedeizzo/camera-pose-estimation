@@ -8,7 +8,7 @@ import os
 from config_parser import ConfigParser
 from torch.optim import lr_scheduler, SGD, Adam
 from torch.utils.data import Dataset, DataLoader
-from typing import Optional, Dict, Callable, Tuple, List
+from typing import Optional, Dict, Callable, Tuple, List, Any
 from PIL import Image
 
 from datasets.absolute import (
@@ -63,7 +63,9 @@ def get_device() -> torch.device:
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(config_model, device: torch.device) -> Tuple[torch.nn.Module, Dataset]:
+def get_model(
+    config_model: dict, device: torch.device
+) -> Tuple[torch.nn.Module, Dataset]:
     if config_model["name"] == "posenet":
         model = get_posenet(config_model["outputs"]).to(device)
         dataset_type = AbsolutePoseDataset
@@ -87,7 +89,6 @@ def get_dataloader(
     config_paths: dict,
     dataset_type,
     phase: str,
-    device: torch.device,
 ) -> DataLoader:
     if dataset_type == MapNetDataset and phase != "test":
         seq = config_dataloader.get("sequences", None)
@@ -110,7 +111,7 @@ def get_dataloader(
         and "sequences" in config_dataloader
     ):
         dataset = SevenScenes(
-            dataset_path=dataset_path,
+            dataset_path=PosixPath(dataset_path),
             seq=config_dataloader["sequences"][phase],
         )
     elif dataset_type == MapNetDataset and phase == "test" and "images" in config_paths:
@@ -140,7 +141,6 @@ def get_dataloaders(
     phases: List[str],
     dataset_paths: List[str],
     dataset_type: Dataset,
-    device: torch.device,
 ) -> Dict[str, DataLoader]:
     dataloaders = {}
 
@@ -155,7 +155,6 @@ def get_dataloaders(
             config_paths,
             dataset_type,
             phase,
-            device,
         )
     return dataloaders
 
@@ -179,7 +178,7 @@ def get_optimizer(config_optimizer: dict, paramters) -> torch.optim.Optimizer:
     return optimizer
 
 
-def get_scheduler(config_scheduler: dict, optimizer: torch.optim.Optimizer):
+def get_scheduler(config_scheduler: dict, optimizer: torch.optim.Optimizer) -> Any:
     if config_scheduler["name"] == "StepLR":
         scheduler = lr_scheduler.StepLR(
             optimizer,
@@ -223,7 +222,6 @@ def train(config_path: str):
         ["train", "validation"],
         [train_dataset_path, validation_dataset_path],
         dataset_type,
-        device,
     )
 
     criterion = get_loss(config["loss"], device)
@@ -242,7 +240,11 @@ def train(config_path: str):
     else:
         optimizer = get_optimizer(config["optimizer"], model.parameters())
     summary(
-        model, (config["dataloader"]["batch_size"], *dataloaders["train"].dataset[0][0].size()),
+        model,
+        (
+            config["dataloader"]["batch_size"],
+            *dataloaders["train"].dataset[0][0].size(),
+        ),
     )
     scheduler = get_scheduler(config["scheduler"], optimizer)
 
@@ -254,7 +256,7 @@ def train(config_path: str):
         scheduler,
         config["environment"]["epochs"],
         aim_run,
-        "cuda" if torch.cuda.is_available() else "cpu",
+        device,
     ).cpu()
     net_weights_path = os.path.join(
         experiment_dir,
@@ -296,7 +298,6 @@ def test(config_path: str):
         ["test"],
         [dataset_path],
         dataset_type,
-        device,
     )
 
     targets, predictions = test_model(model, dataloaders["test"], device)

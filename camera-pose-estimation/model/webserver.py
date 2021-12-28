@@ -1,24 +1,16 @@
-import shutil
-import tempfile
-import sys
-import os
-import base64
-import cv2
+import numpy as np
 
-from typing import Optional
-from PIL import Image
+from typing import Tuple
 from io import BytesIO
 
 from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import HTMLResponse, FileResponse, Response
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 
 import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.patches import Circle
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from PIL import Image
+import cv2
 
 from run import inference
 
@@ -35,7 +27,7 @@ app.add_middleware(
 )
 
 
-def rigid_transform_3D(A, B):
+def rigid_transform_3D(A, B) -> Tuple[np.ndarray, np.ndarray]:
     assert A.shape == B.shape
 
     num_rows, num_cols = A.shape
@@ -69,31 +61,34 @@ def rigid_transform_3D(A, B):
 
     return R, t
 
-def get_walkable_mask():
-    img = cv2.imread('./static/cadatastral_plan_all_walkable.jpg')
-    img_hsv=cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    lower_red = np.array([0,50,50])
-    upper_red = np.array([10,255,255])
+def get_walkable_mask() -> np.ndarray:
+    img = cv2.imread("./static/cadatastral_plan_all_walkable.jpg")
+    img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    lower_red = np.array([0, 50, 50])
+    upper_red = np.array([10, 255, 255])
     mask0 = cv2.inRange(img_hsv, lower_red, upper_red)
-    return mask0!=255
+    return mask0 != 255
 
-def adjust_prediction(prediction):
+
+def adjust_prediction(prediction) -> Tuple[int, int]:
     is_walkable = get_walkable_mask()
 
     x, y = prediction.astype(int)[:2]
     if is_walkable[y, x]:
         return x, y
-    min_dist, min_row, min_col = (np.Inf,0,0)
+    min_dist, min_row, min_col = (np.Inf, 0, 0)
     for i_row, row in enumerate(is_walkable):
         for i_col, cell in enumerate(row):
             if cell:
-                dist = np.sqrt((y - i_row)**2+(x - i_col)**2)
+                dist = np.sqrt((y - i_row) ** 2 + (x - i_col) ** 2)
                 if dist < min_dist:
                     min_dist = dist
                     min_row = i_row
                     min_col = i_col
     return min_col, min_row
+
 
 def create_circle(
     positions: np.ndarray,
@@ -102,20 +97,17 @@ def create_circle(
     rotation_matrix: np.ndarray,
     translation_vector: np.ndarray,
     to_adjust: bool = False,
-):
+) -> Circle:
     xyz = np.array([positions[:3]]).T
     xyz = xyz / unit_measure * pixels_amount
     xyz = (np.matmul(rotation_matrix, xyz) + translation_vector).T[0]
     if to_adjust:
-        print('aggiusto')
+        print("aggiusto")
         xyz = adjust_prediction(xyz)
     return Circle((xyz[0], xyz[1]), 25)
 
 
-def draw_position_on_map(
-    map_path: str,
-    position: Circle
-):
+def draw_position_on_map(map_path: str, position: Circle) -> BytesIO:
     img = plt.imread(map_path)
     fig, ax = plt.subplots(1)
     ax.set_aspect("equal")
@@ -131,9 +123,9 @@ def draw_position_on_map(
 
 
 @app.post("/numerical_pose")
-async def numerical_pose(img: UploadFile = File(...)):
+async def numerical_pose(img: UploadFile = File(...)) -> dict:
     positions, _, _, _, _ = inference(image=Image.open(img.file))
-    print(f'positions: {positions}')
+    print(f"positions: {positions}")
     labels = [
         "x",
         "y",
@@ -148,10 +140,14 @@ async def numerical_pose(img: UploadFile = File(...)):
 
 
 @app.post("/visual_pose")
-async def visual_pose(img: UploadFile = File(...)):
-    positions, unit_measure, pixels_amount, rotation_matrix, translation_vector = inference(
-        image=Image.open(img.file)
-    )
+async def visual_pose(img: UploadFile = File(...)) -> Response:
+    (
+        positions,
+        unit_measure,
+        pixels_amount,
+        rotation_matrix,
+        translation_vector,
+    ) = inference(image=Image.open(img.file))
     circle = create_circle(
         positions,
         unit_measure,
@@ -159,32 +155,33 @@ async def visual_pose(img: UploadFile = File(...)):
         rotation_matrix,
         translation_vector,
     )
-    encoded_map = draw_position_on_map(
-        "./static/cadatastral_plan_all.jpg",
-        circle
-    )
+    encoded_map = draw_position_on_map("./static/cadatastral_plan_all.jpg", circle)
 
     return Response(
         content=base64.b64encode(encoded_map.getvalue()),
         media_type="image/jpeg",
     )
+
 
 @app.post("/visual_walkable_pose")
-async def visual_walkable_pose(img: UploadFile = File(...)):
-    positions, unit_measure, pixels_amount, rotation_matrix, translation_vector = inference(
-        image=Image.open(img.file)
-    )
+async def visual_walkable_pose(img: UploadFile = File(...)) -> Response:
+    (
+        positions,
+        unit_measure,
+        pixels_amount,
+        rotation_matrix,
+        translation_vector,
+    ) = inference(image=Image.open(img.file))
     circle = create_circle(
         positions,
         unit_measure,
         pixels_amount,
         rotation_matrix,
         translation_vector,
-        to_adjust=True
+        to_adjust=True,
     )
     encoded_map = draw_position_on_map(
-        "./static/cadatastral_plan_all_alpha.jpg",
-        circle
+        "./static/cadatastral_plan_all_alpha.jpg", circle
     )
 
     return Response(
@@ -192,7 +189,8 @@ async def visual_walkable_pose(img: UploadFile = File(...)):
         media_type="image/jpeg",
     )
 
-@app.get("/index.html", response_class=HTMLResponse)
-def prova():
+
+@app.get("/", response_class=HTMLResponse)
+def index():
     with open("./static/index.html", "r") as f:
         return "\n".join(f.readlines())

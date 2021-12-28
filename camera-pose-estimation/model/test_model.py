@@ -9,7 +9,7 @@ from models.mapnet import MapNet
 from typing import Tuple
 
 
-def compute_absolute_positions(positions: pd.DataFrame):
+def compute_absolute_positions(positions: pd.DataFrame) -> np.ndarray:
     tvecs = positions[["tx", "ty", "tz"]].values
     qvecs = positions[["qw", "qx", "qy", "qz"]].values
     xyz_positions = []
@@ -22,7 +22,7 @@ def compute_absolute_positions(positions: pd.DataFrame):
     return xyz_positions
 
 
-def from_relative_to_absolute_pose(predictions: pd.DataFrame):
+def from_relative_to_absolute_pose(predictions: pd.DataFrame) -> pd.DataFrame:
     return predictions.cumsum()
 
 
@@ -77,9 +77,13 @@ def test_model(
         targets = np.concatenate([targets_xyz, targets_quat], axis=1)
 
     predictions = pd.DataFrame(
-        predictions, columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
+        predictions,
+        columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
     )
 
-    targets = pd.DataFrame(targets, columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],)
+    targets = pd.DataFrame(
+        targets,
+        columns=["tx", "ty", "tz", "qx", "qy", "qz", "qw"],
+    )
 
     return targets, predictions

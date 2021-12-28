@@ -2,14 +2,11 @@ import torch
 import pandas as pd
 
 from .dataset import get_image_trasform, load_images
-
+from typing import Tuple
 from torch.utils.data import Dataset
 
 
-def get_relative_sample_from_row(df_row):
-    """
-    Helper function to retrieve one dataset sample from a single row of the pandas DataFrame
-    """
+def get_relative_sample_from_row(df_row) -> Tuple[list, torch.Tensor]:
     x = [df_row.image_t, df_row.image_t1]
     y = torch.Tensor(
         [
@@ -32,7 +29,6 @@ class RelativePoseDataset(Dataset):
         dataset_path: str,
         image_folder: str,
         device,
-        is_train=True,
         transforms=None,
     ) -> None:
         self.X = []
