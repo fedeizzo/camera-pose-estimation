@@ -129,8 +129,8 @@ net_weights_dir = "path"
 
 ### MapNet
 In order to run PoseNet it is required to create a config files:
-- [train](./camera-pose-estimation/model/mapnet_train.ini.sample)
-- [test](./camera-pose-estimation/model/mapnet_test.ini.sample)
+- [train](./camera-pose-estimation/model/mapnet_train.ini.sample) configuration file;
+- [test](./camera-pose-estimation/model/mapnet_test.ini.sample) configuration file.
 
 *Train*
 ```bash
