@@ -8,7 +8,7 @@ Due to COLMAP limitations, different runs were necessary, since the final recons
 Due to the models' backend implementation, input images of the model should be 224x224 pixels: for this reason, resizing and center cropping has been adopted. The final size of the processed dataset is 880.3 MB. Train, validation, and test datasets have equal size and have been generated according the $\mod{3}$ operation on the frame index: in this way, adjacent frames are included in different datasets.
 
 \subsection{PoseNet}
-Since several pre-trained models can be used as the PoseNet backend, in \cref{tab:mapnet-backends} we present a brief list of them with the respective mean absolute error in the test set: notice that all the PoseNets have been tested with a single final linear layer. Even if the overall trend is similar, it is possible to notice that in general bigger networks obtain better results: this is mainly due to the performance list showed on the ImageNet dataset in \cref{tab:backend-performance-imagenet}. In this case, it means that more parameters make the difference, but causes also drawbacks in model performances due to higher computational complexity.
+Since several pre-trained models can be used as the PoseNet backend, in \cref{tab:mapnet-backends} we present a brief list of them with the respective mean absolute error in the test set: notice that all the PoseNets have been tested with a single final linear layer. Even if the overall trend is similar, it is possible to notice that in general bigger networks obtain better results: this is mainly due to the performance list showed on the ImageNet dataset in \cref{tab:backend-performance-imagenet}. In this case, it means that more parameters make the difference, but causes also drawbacks in model time performances due to higher computational complexity.
 
 \begin{table}[htbp]
     \caption{PoseNet backend comparison}
@@ -38,7 +38,7 @@ In addition, \cref{tab:posenet-losses} shows different loss functions that have 
     \label{fig:posenet-losses}
 \end{figure}
 
-\Cref{fig:posenet-losses} shows the SmoothedL1Loss and L1Loss loss curves for a ResNet-152 PoseNet. It is possible to notice from \cref{tab:posenet-losses} that both in each of the two cases, the model is converging without overfitting.
+\Cref{fig:posenet-losses} shows the SmoothedL1Loss and L1Loss loss curves for a ResNet-152 PoseNet. It is possible to notice from \cref{tab:posenet-losses} that in both two cases, the model is converging without overfitting.
 
 \begin{table}[htbp]
     \caption{PoseNet losses comparison}
@@ -98,7 +98,23 @@ Also in this case the overall trend is similar: this highlights that the extract
 
 Another interesting point is the importance of the final linear encoder, represented in terms of size with the number of trainable parameters in \cref{tab:posenet-backends,tab:mapnet-backends}. It is clear that more parameters are useful to better fit complex environments, so for this reason three linear layers have been used in our implementation with respect to the original one \cite{mapnet}.
 
-Following the example of \cref{fig:posenet-losses} for the PoseNet model, \cref{fig:mapnet-losses} shows a comparison on the ResNet-34 MapNet for the training and validation curves for different losses. Also in this case the model is converging without overfitting.
+\begin{table}[htbp]
+    \caption{Mapnet losses comparison}
+    \begin{center}
+        \begin{tabular}{lrr}
+            \toprule
+            Loss            & {Position Error} & {Rotation Error} \\
+            \midrule
+            L1Loss          & 0.227            & 0.042            \\
+            SmoothedL1Loss  & 0.187            & 0.076            \\
+            RMSE            & \textbf{0.187}   & \textbf{0.038}   \\
+            \bottomrule
+        \end{tabular}
+        \label{tab:mapnet-losses}
+    \end{center}
+\end{table}
+
+Following the example of \cref{fig:posenet-losses} for the PoseNet model, \cref{fig:mapnet-losses} shows a comparison on the ResNet-34 MapNet for the training and validation curves for different losses. Also in this case the model is converging without overfitting. The loss values can be viewed also on \cref{tab:mapnet-losses}.
 \begin{figure}[htbp]
     \begin{center}
         \includegraphics[width=0.4\textwidth]{./imgs/mapnet_losses.png}
@@ -111,15 +127,6 @@ Moreover, as can be seen in \cref{fig:trajectory-mapnet}, the custom MapNet pred
 
 Since this approach has been shown to still include some imperfections, we have also included a post-processing algorithm which tries to correct the model predictions. To be more specific, if the model prediction is not in a walkable spot in the map, then the output is going to be the nearest walkable point on the map according to the Euclidean distance criterion. The post-processing procedure allows to reduce the mean absolute error between predictions and targets from $153 cm$ to $130 cm$: the results can be viewed in \cref{fig:trajectory-mapnet-walkable}.
 
-\subsection{Dashboard}
-To be able to deploy the model, a web-server has been developed with FastAPI: this interface aims to easily allow users to interact with the final model through a web-based Bootstrap dashboard.
-The dashboard can show the model predictions in three different ways:
-\begin{itemize}
-    \item raw model output displayed through an alert;
-    \item raw model output shown in the floor map;
-    \item post-processed model output in a walkable zone in the floor map.
-\end{itemize}
-\Cref{fig:dashboard} presents the \emph{UI} for showing post-precessed model predictions: red zones are non-walkable areas.
 \begin{figure*}[htbp]
     \begin{subfigure}[b]{0.542\textwidth}
         \includegraphics[width=1\textwidth]{./imgs/dashboard.png}
@@ -134,3 +141,13 @@ The dashboard can show the model predictions in three different ways:
     \end{subfigure}
     \caption{Non-walkable area maps.}
 \end{figure*}
+
+\subsection{Dashboard}
+To be able to deploy the model, a web-server has been developed with FastAPI: this interface aims to easily allow users to interact with the final model through a web-based Bootstrap dashboard.
+The dashboard can show the model predictions in three different ways:
+\begin{itemize}
+    \item raw model output displayed through an alert;
+    \item raw model output shown in the floor map;
+    \item post-processed model output in a walkable zone in the floor map.
+\end{itemize}
+\Cref{fig:dashboard} presents the \emph{UI} for showing post-precessed model predictions: red zones are non-walkable areas.

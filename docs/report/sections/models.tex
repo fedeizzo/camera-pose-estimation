@@ -42,23 +42,23 @@ As shown in \cref{fig:mapnet-posenet-structure}, just like the MeNet model, the 
     \label{fig:mapnet-posenet-structure}
 \end{figure}
 
-This model architecture is actually pretty convenient, since it can use pre-trained deep convolutional networks, through the transfer learning approach. In most of the cases, this kind of models are trained on the ImageNet dataset \cite{imagenet}, which counts almost 3.2 million real-world images: this offer good generalization capabilities for the feature extraction task.
+This model architecture is actually pretty convenient, since it can use pre-trained deep convolutional networks, through the transfer learning approach. In most of the cases, this kind of models are trained on the ImageNet dataset \cite{imagenet}, which counts almost 3.2 millions real-world images: this offer good generalization capabilities for the feature extraction task.
 It is important to notice that these models have been developed to work on the ImageNet dataset, which consists of RGB 224x224 pixels images: for this reason, any PoseNet input must have the same shape. 
 Some examples of state-of-the-art backend models that have been considered are: GoogLeNet~\cite{googlenet}, ResNet~\cite{resnet}, and EfficientNet-B7~\cite{efficientnet}. \Cref{tab:backend-performance-imagenet} shows the accuracy over the k=(1, 5) top predictions for the used backends on the ImageNet dataset.
 
 \begin{table}[htbp]
     \caption{Backends performance in ImageNet}
     \begin{center}
-        \begin{tabular}{lrr}
+        \begin{tabular}{lrrr}
             \toprule
-            Model           & Acc@1           & Acc@5           \\
+            Model           & Acc@1           & Acc@5           & Parameters      \\
             \midrule
-            GoogLeNet       & 69.778          & 89.530          \\
-            ResNet-18       & 69.758          & 89.078          \\
-            ResNet-34       & 73.314          & 91.420          \\
-            ResNet-50       & 76.130          & 92.862          \\
-            ResNet-152      & 78.312          & 94.046          \\
-            EfficientNet-B7 & \textbf{84.122} & \textbf{96.908} \\
+            GoogLeNet       & 69.778          & 89.530          & $\sim$ 7,000,000\\
+            ResNet-18       & 69.758          & 89.078          & 11,180,103      \\
+            ResNet-34       & 73.314          & 91.420          & 21,288,263      \\
+            ResNet-50       & 76.130          & 92.862          & 23,522,375      \\
+            ResNet-152      & 78.312          & 94.046          & 58,158,151      \\
+            EfficientNet-B7 & \textbf{84.122} & \textbf{96.908} & 63,804,887      \\
             \bottomrule
         \end{tabular}
         \label{tab:backend-performance-imagenet}
