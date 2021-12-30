@@ -14,7 +14,7 @@ Most of the online-available 3D acquisitions are acquired with \emph{depth senso
 
 The motion capture system is able to follow the position of the tracked objects with extreme precision. In this case the main problems are related to the association of poses to video captured from the camera held by the tracked subject and difficulties involved in the system calibration.
 
-The techniques of structure from motion are used to generate 3D models in case many photos are available. The overall idea is to feed the algorithm with these images in order to extract features and build a recomposition of the environment through a point clouds.
+The techniques of structure from motion are used to generate 3D models in case many photos are available. The overall idea is to feed the algorithm with these images in order to extract features and build a recomposition of the environment through a point cloud.
 During the reconstruction process, structure from motion tools also compute camera poses in an arbitrary reference system: this intermediate requirement have been exploited by us to generate a labeled dataset, as presented in \cref{fig:trajectory-colmap}.
 
 \begin{figure}[htbp]

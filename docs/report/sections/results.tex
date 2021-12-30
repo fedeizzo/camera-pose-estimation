@@ -11,7 +11,7 @@ Due to the models' backend implementation, input images of the model should be 2
 Since several pre-trained models can be used as the PoseNet backend, in \cref{tab:mapnet-backends} we present a brief list of them with the respective mean absolute error in the test set: notice that all the PoseNets have been tested with a single final linear layer. Even if the overall trend is similar, it is possible to notice that in general bigger networks obtain better results: this is mainly due to the performance list showed on the ImageNet dataset in \cref{tab:backend-performance-imagenet}. In this case, it means that more parameters make the difference, but causes also drawbacks in model time performances due to higher computational complexity.
 
 \begin{table}[htbp]
-    \caption{PoseNet backend comparison}
+    \caption{PoseNet backend comparison.}
     \begin{center}
         \begin{tabular}{lrrrr}
             \toprule
@@ -41,7 +41,7 @@ In addition, \cref{tab:posenet-losses} shows different loss functions that have 
 \Cref{fig:posenet-losses} shows the SmoothedL1Loss and L1Loss loss curves for a ResNet-152 PoseNet. It is possible to notice from \cref{tab:posenet-losses} that in both two cases, the model is converging without overfitting.
 
 \begin{table}[htbp]
-    \caption{PoseNet losses comparison}
+    \caption{PoseNet losses comparison.}
     \begin{center}
         \begin{tabular}{lrr}
             \toprule
@@ -72,13 +72,13 @@ In addition, \cref{tab:posenet-losses} shows different loss functions that have 
     \end{subfigure}
     \caption{Estimated trajectories.}
 \end{figure*}
-Moreover, \cref{fig:trajectory-posenet} shows a visual representation of the model performances. It is easy to notice that even if the predictions are almost in the same map zone with respect to their ground truth, they are still pretty sparse. The mean error between prediction and target is $\sim 2000cm$.
+Moreover, \cref{fig:trajectory-posenet} shows a visual representation of the model performances. It is easy to notice that even if the predictions are almost in the same map zone with respect to their ground truth, they are still pretty sparse. The mean absolute error between prediction and target is $\sim 2000cm$.
 
 \subsection{MapNet}
 To prevent sparsification in the model predictions, we propose to use the MapNet~\cite{mapnet}. As for the PoseNet, also in this case several pre-trained models can be used as feature extractor: \cref{tab:mapnet-backends} shows some candidates, each one used with three final linear layers.
 Also in this case the overall trend is similar: this highlights that the extracted features are good enough, independently of the used backbone. Another interesting difference with \cref{tab:posenet-backends} is the fact that models with more parameters are not necessarily the ones performing better.
 \begin{table}[htbp]
-    \caption{MapNet backend comparison}
+    \caption{MapNet backend comparison.}
     \begin{center}
         \begin{tabular}{lrrrr}
             \toprule
@@ -99,7 +99,7 @@ Also in this case the overall trend is similar: this highlights that the extract
 Another interesting point is the importance of the final linear encoder, represented in terms of size with the number of trainable parameters in \cref{tab:posenet-backends,tab:mapnet-backends}. It is clear that more parameters are useful to better fit complex environments, so for this reason three linear layers have been used in our implementation with respect to the original one \cite{mapnet}.
 
 \begin{table}[htbp]
-    \caption{Mapnet losses comparison}
+    \caption{MapNet losses comparison.}
     \begin{center}
         \begin{tabular}{lrr}
             \toprule
