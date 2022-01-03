@@ -26,7 +26,7 @@ During the reconstruction process, structure from motion tools also compute came
 \end{figure}
 
 \subsection{Pipeline}
-In this section we present an automatic pipeline to generate a labeled camera pose estimation dataset using structure from motion techniques. The pipeline requires as input a video captured by any camera, even without sensor calibration. It is composed by several steps:
+In this section we present an automatic pipeline to generate a labeled camera pose estimation dataset using structure from motion technique. The pipeline requires as input a video captured by any camera, even without sensor calibration. It is composed by several steps:
 \begin{enumerate}
     \item video split: the captured video is split into many frames using \texttt{ffmpeg};
     \item structure from motion: frames obtained from the previous step are fed into a structure motion tool that estimates camera poses. In our case we are using \texttt{COLMAP}~\cite{colmap};
