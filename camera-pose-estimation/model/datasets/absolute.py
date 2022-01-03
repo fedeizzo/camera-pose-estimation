@@ -176,7 +176,7 @@ class AbsolutePoseDataset(Dataset):
 
 
 class SevenScenes(Dataset):
-    def __init__(self, dataset_path: PosixPath, seq: str, use_qlog: bool = True):
+    def __init__(self, dataset_path: PosixPath, seq: str, use_qlog: bool = False):
         self.use_qlog = use_qlog
         sequence_path = os.path.join(dataset_path, seq)
         files = listdir(sequence_path)

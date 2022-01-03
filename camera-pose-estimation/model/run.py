@@ -297,10 +297,10 @@ def test(config_path: str):
     model.load_state_dict(torch.load(weights_path))
     model = model.to(get_device())
 
-    # TODO
-    # train_configs["dataloader"]["sequences"] = config["dataloader"][
-    #     "sequences"
-    # ]
+    if "sequences" in config["dataloader"]:
+        train_configs["dataloader"]["sequences"] = config["dataloader"][
+            "sequences"
+        ]
 
     dataloaders = get_dataloaders(
         train_configs["dataloader"],
