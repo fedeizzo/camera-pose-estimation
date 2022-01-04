@@ -64,7 +64,7 @@ outputs = 7
 # save preprocessed dataset according to data folder structure.
 # This reduces the dataset loading time on each run
 save_processed_dataset = true
-num_workers = 4
+num_workers = 0
 batch_size = 128
 
 [loss]
@@ -159,7 +159,7 @@ feature_dimension = 2048
 dropout_rate = 0.5
 
 [dataloader]
-num_workers = 4
+num_workers = 0
 batch_size = 64
 # value used for torchvision jitter transform
 color_jitter = 0.5

@@ -9,7 +9,7 @@ name = "posenet"
 outputs = 7
 
 [dataloader]
-num_workers=4
+num_workers = 0
 batch_size = 64
 
 [loss]
