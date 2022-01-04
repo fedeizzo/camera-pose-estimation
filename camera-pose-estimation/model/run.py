@@ -118,7 +118,7 @@ def get_dataloader(
         dataset = AbsolutePoseDataset(
             dataset_path=PosixPath(dataset_path),
             image_folder=PosixPath(config_paths["images"]),
-            save_processed_dataset=config_paths.get(
+            save_processed_dataset=config_dataloader.get(
                 "save_processed_dataset", False
             ),
         )
@@ -126,7 +126,7 @@ def get_dataloader(
         dataset = dataset_type(
             dataset_path=PosixPath(dataset_path),
             image_folder=PosixPath(config_paths["images"]),
-            save_processed_dataset=config_paths.get(
+            save_processed_dataset=config_dataloader.get(
                 "save_processed_dataset", False
             ),
         )
@@ -301,6 +301,10 @@ def test(config_path: str):
         train_configs["dataloader"]["sequences"] = config["dataloader"][
             "sequences"
         ]
+
+    train_configs["dataloader"]["save_processed_dataset"] = config[
+        "dataloader"
+    ].get("save_processed_dataset", False)
 
     dataloaders = get_dataloaders(
         train_configs["dataloader"],
