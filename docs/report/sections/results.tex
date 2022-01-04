@@ -1,11 +1,11 @@
 \section{Results}
 
 \subsection{Dataset}
-To test the already discussed data generation pipeline and deep learning models, we mapped the second floor of the Povo 1 building in the University of Trento.
-We filmed a single vertical video with a smartphone (model: OPPO reno 4 CPH2091) at 2160x3840 pixels 30fps of the entire floor, avoiding moving objects and people. The frames have been extracted at 10fps, resulting in 1462 images for a total of 13.1 GB. COLMAP has been used to generate a sparse reconstruction map using the Poisson mesher, high quality, shared intrinsics, and simple\_radial camera model.
+To test the already discussed data generation pipeline and deep learning models, we mapped the second floor of the Povo~1 building in the University of Trento.
+We filmed a single vertical video with a smartphone (model: OPPO reno 4 CPH2091) at 2160x3840 pixels 30fps of the entire floor doing an anti-clockwise traversal, avoiding moving objects and people. The frames have been extracted at 10fps, resulting in 1462 images for a total of 13.1 GB. COLMAP has been used to generate a sparse reconstruction map using the Poisson mesher, high quality, shared intrinsics, and simple\_radial camera model.
 Due to COLMAP limitations, different runs were necessary, since the final reconstruction was not good enough, especially in terms of closed-loop detection: \cref{fig:trajectory-colmap} shows the best result that has been achieved.
 
-Due to the models' backend implementation, input images of the model should be 224x224 pixels: for this reason, resizing and center cropping has been adopted. The final size of the processed dataset is 880.3 MB. Train, validation, and test datasets have equal size and have been generated according the $\mod{3}$ operation on the frame index: in this way, adjacent frames are included in different datasets.
+Due to the models' backend implementation, input images of the model should be 224x224 pixels: for this reason, resizing and center cropping have been adopted. The final size of the processed dataset is 880.3 MB. Train, validation, and test datasets have equal size and have been generated according the $\mod{3}$ operation on the frame index: in this way, adjacent frames are included in different datasets.
 
 \subsection{PoseNet}
 Since several pre-trained models can be used as the PoseNet backend, in \cref{tab:mapnet-backends} we present a brief list of them with the respective mean absolute error in the test set: notice that all the PoseNets have been tested with a single final linear layer. Even if the overall trend is similar, it is possible to notice that in general bigger networks obtain better results: this is mainly due to the performance list showed on the ImageNet dataset in \cref{tab:backend-performance-imagenet}. In this case, it means that more parameters make the difference, but causes also drawbacks in model time performances due to higher computational complexity.
@@ -125,7 +125,7 @@ Following the example of \cref{fig:posenet-losses} for the PoseNet model, \cref{
 
 Moreover, as can be seen in \cref{fig:trajectory-mapnet}, the custom MapNet predictions follow more closely the ground truth path with respect to the ones described by the PoseNet in \cref{fig:trajectory-posenet}.
 
-Since this approach has been shown to still include some imperfections, we have also included a post-processing algorithm which tries to correct the model predictions. To be more specific, if the model prediction is not in a walkable spot in the map, then the output is going to be the nearest walkable point on the map according to the Euclidean distance criterion. The post-processing procedure allows to reduce the mean absolute error between predictions and targets from $153 cm$ to $130 cm$: the results can be viewed in \cref{fig:trajectory-mapnet-walkable}.
+Since this approach has been shown to still include some imperfections, we have also included a post-processing algorithm which tries to correct the model predictions. To be more specific, if the model prediction is not in a walkable spot in the map, then the output is going to be the nearest walkable point in the map according to the Euclidean distance criterion. The post-processing procedure allows to reduce the mean absolute error between predictions and targets from $153 cm$ to $130 cm$ for the MapNet model: the results can be seen in \cref{fig:trajectory-mapnet-walkable}.
 
 \begin{figure*}[htbp]
     \begin{subfigure}[b]{0.542\textwidth}

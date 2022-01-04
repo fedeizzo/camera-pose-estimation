@@ -42,7 +42,7 @@ As shown in \cref{fig:mapnet-posenet-structure}, just like the MeNet model, the 
     \label{fig:mapnet-posenet-structure}
 \end{figure}
 
-This model architecture is actually pretty convenient, since it can use pre-trained deep convolutional networks, through the transfer learning approach. In most of the cases, this kind of models are trained on the ImageNet dataset \cite{imagenet}, which counts almost 3.2 millions real-world images: this offer good generalization capabilities for the feature extraction task.
+This model architecture is actually pretty convenient, since it can use pre-trained deep convolutional networks, through the transfer learning approach. In most of the cases, this kind of models are trained on the ImageNet dataset \cite{imagenet}, which counts more than 14 million real-world images: this offers good generalization capabilities for the feature extraction task.
 It is important to notice that these models have been developed to work on the ImageNet dataset, which consists of RGB 224x224 pixels images: for this reason, any PoseNet input must have the same shape. 
 Some examples of state-of-the-art backend models that have been considered are: GoogLeNet~\cite{googlenet}, ResNet~\cite{resnet}, and EfficientNet-B7~\cite{efficientnet}. \Cref{tab:backend-performance-imagenet} shows the accuracy over the k=(1, 5) top predictions for the used backends on the ImageNet dataset.
 
@@ -65,12 +65,12 @@ Some examples of state-of-the-art backend models that have been considered are: 
     \end{center}
 \end{table}
 
-Since ImageNet pre-trained models are used for classification purposes, we need to remove the last classification-related layers, and use only the convolutional ones for feature extraction. This gives us the opportunity to insert in the PoseNet a feature extraction mechanism on real-world images with minimum effort: training by scratch such models would require a huge amount of computational power.
+Since ImageNet pre-trained models are used for classification purposes, we need to remove the last classification-related layers, and use only the convolutional ones for feature extraction. This gives us the opportunity to insert in the PoseNet a feature extraction mechanism on real-world images with minimum effort: otherwise training by scratch such models would require a huge amount of computational power.
 
-Moreover, to train the PoseNet we adopt the weighted loss described in \cref{eq:menet-loss}, also used in the MeNet model.
+Moreover, to train the PoseNet we adopt the weighted loss described in \cref{eq:menet-loss}, also used for the MeNet model.
 
 \subsection{MapNet}
-The MapNet model for APE represents an evolution of the PoseNet model: in fact, the model architecture remains actually the same, as shown in \cref{fig:mapnet-posenet-structure}. While even in this case the original model has a single linear layer, we introduce a sequence of them, each followed by the RELU activation function. This enables the model to learn more complex scenarios fitting better the data distribution.
+The MapNet model for APE represents a direct evolution of the PoseNet model: in fact, the model architecture remains actually quite similar, as shown in \cref{fig:mapnet-posenet-structure}. While even in this case the original MapNet model has a single last linear layer, we introduce a sequence of them, each followed by the RELU activation function. This enables the model to learn more complex scenarios fitting better the data distribution.
 
 Another difference with respect to the PoseNet is the loss function used to train the model. In this case, the errors on the prediction of absolute poses are not the only ones which are penalized: in fact, also errors in the relative poses are taken in consideration. To be able to penalize also relative errors, during the training process the model receives as input a batch of \texttt{step} ($s$) sorted frames, that are separated by \texttt{skip} ($k$) frames in the original video.
 \Cref{eq:mapnet-loss} describes the MapNet loss as a mixture of absolute and relative errors regularized by the $\alpha$ hyperparameter: 

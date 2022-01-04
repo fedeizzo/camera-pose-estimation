@@ -61,7 +61,7 @@
 \begin{frame}{Camera Pose Estimation}
     \begin{columns}
         \column{0.45\textwidth}
-        The \textbf{camera pose estimation} problem aims to find the function $E$ that, given an \textbf{image} $I_c$, returns the \textbf{position} $x_c$ and \textbf{orientation} $q_c$ of the camera.
+        The \textbf{camera pose estimation} problem aims to find the function $E$ that, given an \textbf{image} $I_c$, returns the \textbf{position} $x_c$ and \textbf{orientation} $q_c$ of the camera $C$.
         \[
             E(I_c) = (x_c, q_c)
         \]
@@ -70,7 +70,7 @@
         \begin{figure}
             \centering
             \includegraphics[width=0.9\textwidth]{../imgs/introduction_example.png}
-            \caption{Example of camera relocalization.}
+            \caption{Example of camera pose estimation (relocalization).}
         \end{figure}
     \end{columns}
 \end{frame}
@@ -82,7 +82,7 @@
     \begin{itemize}
         \item \textbf{IMU sensors}: not enough accurate;
         \item \textbf{digital video}: not available in the university environment;
-        \item \textbf{motion capture system}: difficult to associate with a recorder video;
+        \item \textbf{motion capture system}: difficult to associate with a recorded video;
         \item \textbf{structure from motion}: our choice (COLMAP).
     \end{itemize}
 \end{frame}

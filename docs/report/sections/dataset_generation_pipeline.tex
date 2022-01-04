@@ -5,17 +5,17 @@ The deep learning approaches applied in this work are \emph{supervised learning}
     \item \emph{IMU sensors}: usage of gyroscope and accelerometer sensors of a smartphone to estimate the position of the camera during a video given a fixed origin point. The process of combining multiple noisy information sources to obtain a good estimation can be achieved through Kalman filters;
     \item \emph{digital video}: usage of free online 3 dimensional datasets in which video can be recorder in a digital way;
     \item \emph{motion capture system}: usage of a motion capture system that estimates the camera position following some tracking objects attached to the subject;
-    \item \emph{structure from motion}: techniques that digitally reconstruct environments from a sequence of images with point clouds.
+    \item \emph{structure from motion}: techniques that digitally reconstruct environments from a sequence of images using point clouds.
 \end{itemize}
 
-The main problem encountered with IMU sensors is the high presence of noise during data acquisition: this causes the processed signal to be very dirty, so much that the precision is not acceptable for our intentions. A possible solution should imply exploiting some well calibrated hardware in a controlled environment.
+The main problem encountered with IMU sensors is the high presence of noise during data acquisition: this causes the processed signals to be very dirty, so much that the achieved precision is not acceptable for our intentions. A possible solution should imply exploiting some well calibrated hardware in a controlled environment.
 
 Most of the online-available 3D acquisitions are acquired with \emph{depth sensors} or \emph{LIDAR sensors}. For this reason, although the camera pose estimation would have been very precise, we could not reproduce this acquisition system in the University of Trento. In addition to that, only few datasets are freely available, and they usually lack of good documentation regarding how they were captured.
 
 The motion capture system is able to follow the position of the tracked objects with extreme precision. In this case the main problems are related to the association of poses to video captured from the camera held by the tracked subject and difficulties involved in the system calibration.
 
 The techniques of structure from motion are used to generate 3D models in case many photos are available. The overall idea is to feed the algorithm with these images in order to extract features and build a recomposition of the environment through a point cloud.
-During the reconstruction process, structure from motion tools also compute camera poses in an arbitrary reference system: this intermediate requirement have been exploited by us to generate a labeled dataset, as presented in \cref{fig:trajectory-colmap}.
+During the reconstruction process, structure from motion tools also compute camera poses in an arbitrary reference system: this intermediate requirement has been exploited by us to generate a labeled dataset, as presented in \cref{fig:trajectory-colmap}.
 
 \begin{figure}[htbp]
     \begin{center}
@@ -26,7 +26,7 @@ During the reconstruction process, structure from motion tools also compute came
 \end{figure}
 
 \subsection{Pipeline}
-In this section we present an automatic pipeline to generate a labeled camera pose estimation dataset using structure from motion technique. The pipeline requires as input a video captured by any camera, even without sensor calibration. It is composed by several steps:
+In this section we present an automatic pipeline to generate a labeled camera pose estimation dataset using a structure from motion technique. The pipeline requires as input a video captured by any camera, even without sensor calibration. It is composed by several steps:
 \begin{enumerate}
     \item video split: the captured video is split into many frames using \texttt{ffmpeg};
     \item structure from motion: frames obtained from the previous step are fed into a structure motion tool that estimates camera poses. In our case we are using \texttt{COLMAP}~\cite{colmap};
@@ -34,7 +34,7 @@ In this section we present an automatic pipeline to generate a labeled camera po
 \end{enumerate}
 
 \subsection{COLMAP reconstruction}
-COLMAP~\cite{colmap} is a tool that allows to build a 3D points clouds reconstruction model of an environment by using photos of it.
+COLMAP~\cite{colmap} is a tool that allows to build a point-cloud reconstruction model of an environment by using photos of it.
 Like the other structure from motion techniques, COLMAP also computes camera poses in an arbitrary reference system during the reconstruction process.
 It is possible to generate point clouds with two different levels of precision: \emph{sparse} and \emph{dense}, and both of them are composed by:
 \begin{itemize}
@@ -47,7 +47,7 @@ It is possible to generate point clouds with two different levels of precision: 
     \begin{center}
         \includegraphics[width=0.45\textwidth]{./imgs/extracted_features_colmap.png}
     \end{center}
-    \caption{Features extracted as a points clouds by COLMAP in the second floor of the Povo 1 building in the University of Trento. The red line represents the camera path in the video footage.}
+    \caption{Features extracted as a point cloud by COLMAP in the second floor of the Povo 1 building in the University of Trento. The red line represents the camera path in the video footage.}
     \label{fig:features-colmap}
 \end{figure}
 
@@ -86,7 +86,7 @@ Matrix $R$ and vector $t$ are obtained using \textit{Singular Value Decompositio
     \label{eq:singular-value-decomposition}
 \end{equation}
 
-To obtain the matrix $R$, the first step consists in aligning on the same origin the two datasets centroids. This is done by subtracting to each coordinate of each point the centroid of the respective dataset. After this, it is possible to ignore the translation component $t$ and compute the rotation $R$:
+To obtain the matrix $R$, the first step consists in aligning on the same origin the two dataset centroids. This is done by subtracting to each coordinate of each point the centroid of the respective dataset. After this, it is possible to ignore the translation component $t$ and compute the rotation $R$:
 \begin{equation}
     \begin{aligned}
         H         & = (A-\textrm{centroid}_A)(B-\textrm{centroid}_B)^T \\

@@ -1,5 +1,5 @@
 \section{Introduction}
-The \emph{camera pose}, known also as \emph{camera extrinsics}, can be expressed as a combination of two components:
+The \emph{camera pose}, known also as \emph{camera extrinsics}, of a camera $C$ can be expressed as a combination of two components:
 \begin{enumerate}
     \item a tuple of three elements that identifies the absolute coordinates $x,y\text{ and }z$ in a reference space:
           \begin{equation}
@@ -15,7 +15,7 @@ The \emph{camera pose}, known also as \emph{camera extrinsics}, can be expressed
 \end{enumerate}
 Consequentially, the pose is referred as $p_c=(x_c, q_c)$.
 
-It is important to notice that this is not the only available representation for poses: other methods are based also on rotation matrices and Euler angles. It is worth specifying that even if Euler angles are the most straightforward and efficient in terms of memory consumption, they suffer from of the Gimbal lock problem. Also, although rotation matrices guarantee a good representation, they are more memory expensive (9 values) than quaternions (only 4 values): for this reason the latter form is preferred in this work.
+It is important to notice that this is not the only available representation for poses: other methods are based also on rotation matrices and Euler angles. It is worth specifying that even if Euler angles are the most straightforward and efficient in terms of memory consumption, they suffer from of the Gimbal lock problem. Although rotation matrices guarantee a good representation, they are more memory expensive (9 values) than quaternions (only 4 values): for this reason the latter form is preferred in this work.
 
 Given an image $I_c$ captured by a camera $C$, an absolute pose estimator $E$ tries to predict the 3D pose orientation and location of $C$ in world coordinates, defined for some arbitrary reference system in the 3D model. Formally speaking, the \emph{absolute pose estimation (APE)} problem can be defined as the problem of estimating a function $E$ taking as input an image $I_c$ captured by a camera $C$ and as output its respective pose:
 \begin{equation}
