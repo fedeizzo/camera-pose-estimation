@@ -179,9 +179,9 @@ save_processed_dataset = true
 # full documentation pdf file in docs folder
 type = "mapnet_criterion"
 beta = 0
-gamma = -3.0
-learn_beta = true
-learn_gamma = true
+gamma = 0
+learn_beta = false
+learn_gamma = false
 
 [optimizer]
 name = "SGD"

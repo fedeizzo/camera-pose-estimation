@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from torch import nn
 
 from typing import Callable, Any
@@ -34,7 +35,9 @@ def get_loss(config_loss: dict, device: torch.device) -> Any:
     elif config_loss["type"] == "dense_custom":
         criterion = dense_custom_loss(alpha=config_loss["alpha"])
     elif config_loss["type"] == "weighted":
-        criterion = weighted_mse_loss(torch.Tensor(config_loss["weights"]).to(device))
+        criterion = weighted_mse_loss(
+            torch.Tensor(config_loss["weights"]).to(device)
+        )
     elif config_loss["type"] == "mapnet_criterion":
         criterion = MapNetCriterion(
             device=device,
@@ -57,7 +60,10 @@ def calc_vos_simple(poses) -> torch.Tensor:
     """
     vos = []
     for p in poses:
-        pvos = [p[i + 1].unsqueeze(0) - p[i].unsqueeze(0) for i in range(len(p) - 1)]
+        pvos = [
+            p[i + 1].unsqueeze(0) - p[i].unsqueeze(0)
+            for i in range(len(p) - 1)
+        ]
         vos.append(torch.cat(pvos, dim=0))
     vos = torch.stack(vos, dim=0)
 
@@ -107,32 +113,46 @@ class MapNetCriterion(nn.Module):
 
     def forward(self, pred, targ):
         size = pred.size()
-        abs_loss = torch.sqrt(
-            self.t_loss_fn(
-                pred.view(-1, *size[2:])[:, :3],
-                targ.view(-1, *size[2:])[:, :3],
+        abs_loss = (
+            torch.sqrt(
+                self.t_loss_fn(
+                    pred.view(-1, *size[2:])[:, :3],
+                    targ.view(-1, *size[2:])[:, :3],
+                )
             )
-        ) + torch.sqrt(
-            self.q_loss_fn(
-                pred.view(-1, *size[2:])[:, 3:],
-                targ.view(-1, *size[2:])[:, 3:],
+            * torch.exp(-self.sax)
+            + self.sax
+            + torch.sqrt(
+                self.q_loss_fn(
+                    pred.view(-1, *size[2:])[:, 3:],
+                    targ.view(-1, *size[2:])[:, 3:],
+                )
             )
+            * torch.exp(-self.saq)
+            + self.saq
         )
 
         pred_vos = calc_vos_simple(pred)
         targ_vos = calc_vos_simple(targ)
 
         size = pred_vos.size()
-        vo_loss = torch.sqrt(
-            self.t_loss_fn(
-                pred_vos.view(-1, *size[2:])[:, :3],
-                targ_vos.view(-1, *size[2:])[:, :3],
+        vo_loss = (
+            torch.sqrt(
+                self.t_loss_fn(
+                    pred_vos.view(-1, *size[2:])[:, :3],
+                    targ_vos.view(-1, *size[2:])[:, :3],
+                )
             )
-        ) + torch.sqrt(
-            self.q_loss_fn(
-                pred_vos.view(-1, *size[2:])[:, 3:],
-                targ_vos.view(-1, *size[2:])[:, 3:],
+            * torch.exp(-self.srx)
+            + self.srx
+            + torch.sqrt(
+                self.q_loss_fn(
+                    pred_vos.view(-1, *size[2:])[:, 3:],
+                    targ_vos.view(-1, *size[2:])[:, 3:],
+                )
             )
+            * torch.exp(-self.srq)
+            + self.srq
         )
 
         loss = abs_loss + vo_loss
