@@ -22,6 +22,23 @@ The steps required to use this repo are:
 4. create an inference config for the dataset: all steps to align CRSs and scale dataset must be done by hand. The procedure used for Povo 1 Second floor can be found in [notebooks folder](./notebooks);
 5. launch the dashboard to deploy the model. At the moment the dashboard will serve the cadastral plan of Povo 1 Second floor. Some changes in the code are required for a different dataset.
 
+## Dependencies
+Runtime dependencies are:
+
+- ffmpeg
+- colmap
+
+Docs generation dependencies are:
+
+- a latex compiler
+
+Development dependencies (used to explore colmap dense and sparse models) are:
+
+- meshlab
+- cloudcompare
+
+A complete runtime, docs and development environment can be created using nix package manager using the file nix-shell.
+
 ## Absolute pose estimation models
 Currently available absolute pose estimation models are:
 
